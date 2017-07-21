@@ -15,7 +15,7 @@ public class CLITest {
     public static void main(String[] args) {
         I2b2Configuration configuration = null;
         try {
-            configuration = new I2b2Configuration(new URI("http://172.16.51.215:9090/i2b2/services/PMService/"), "demo", "demouser", "demo", "i2b2demo", ExecutionReturnType.COUNTS, ExecutionMode.OPTIMIZED);
+            configuration = new I2b2Configuration(new URI("http://172.16.51.215:9090/i2b2/services/PMService/"), "demo", "demouser", "Demo", "i2b2demo", ExecutionReturnType.COUNTS, ExecutionMode.OPTIMIZED);
             ProjectManagementService service = new ProjectManagementService(configuration);
             service.login();
         } catch (Exception e) {

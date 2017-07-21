@@ -11,7 +11,7 @@ class I2b2ServiceBaseTest {
     @Test
     void loadRequestMessageTemplate() {
         I2b2ServiceBase service = new I2b2ServiceBase(new I2b2Configuration());
-        service.loadRequest();
+        service.loadRequest("");
         try {
             assertNotNull(service.getMessage());
         } catch (Exception e) {

@@ -14,7 +14,11 @@ import org.xml.sax.InputSource;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.*;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Scanner;
@@ -37,6 +41,16 @@ public class I2b2ServiceBase {
         DocumentBuilder builder = factory.newDocumentBuilder();
         InputSource is = new InputSource(new StringReader(xml));
         return builder.parse(is);
+    }
+
+    public static String documentToString(Document document) throws TransformerException {
+        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer = tf.newTransformer();
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+        StringWriter writer = new StringWriter();
+        transformer.transform(new DOMSource(document), new StreamResult(writer));
+        String output = writer.getBuffer().toString().replaceAll("\n|\r", "");
+        return output;
     }
 
     private String getFile(String fileName) {
@@ -64,18 +78,20 @@ public class I2b2ServiceBase {
 
     }
 
-    private Document postMessage(Document message) throws Exception {
+    protected Document postMessage(URI uri, Document message) throws Exception {
         HttpClient client = new DefaultHttpClient();
-        HttpPost post = new HttpPost(configuration.getI2b2ProjectManagementUrl());
-        HttpEntity entity = new ByteArrayEntity(message.toString().getBytes("UTF-8"));
+        HttpPost post = new HttpPost(uri);
+        String messageText = documentToString(message);
+        HttpEntity entity = new ByteArrayEntity(messageText.getBytes("UTF-8"),
+                org.apache.http.entity.ContentType.create("application/xml"));
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
         String result = EntityUtils.toString(response.getEntity());
         return loadXMLFromString(result);
     }
 
-    public void loadRequest() {
-        message = getFile("i2b2/i2b2_request.xml");
+    public void loadRequest(String messageName) {
+        message = getFile("i2b2/" + messageName + ".xml");
     }
 
     public Document getMessage() throws Exception {

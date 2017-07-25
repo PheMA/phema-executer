@@ -11,13 +11,19 @@ class I2b2ServiceBaseTest {
     @Test
     void loadRequestMessageTemplate() {
         I2b2ServiceBase service = new I2b2ServiceBase(new I2b2Configuration());
-        service.loadRequest("");
+        service.loadRequest("i2b2_login");
         try {
             assertNotNull(service.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             assertTrue(false, "Unexpected exception thrown");
         }
+    }
+
+    @Test
+    void loadRequest_MissingTemplate() {
+        I2b2ServiceBase service = new I2b2ServiceBase(new I2b2Configuration());
+        assertThrows(NullPointerException.class, () -> { service.loadRequest("blahblah"); });
     }
 
 }

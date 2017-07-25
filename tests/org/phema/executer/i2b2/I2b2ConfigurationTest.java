@@ -29,7 +29,8 @@ class I2b2ConfigurationTest {
     void constructorWithParams() {
         I2b2Configuration config = null;
         try {
-            config = new I2b2Configuration(new URI("http://test.com"), "2", "3", "4", "5", ExecutionReturnType.PATIENTS, ExecutionMode.DEBUG);
+            config = new I2b2Configuration(new URI("http://test.com"), "2", "3", "4", "5", ExecutionReturnType.PATIENTS, ExecutionMode.DEBUG,
+            "6", "7");
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
@@ -41,5 +42,7 @@ class I2b2ConfigurationTest {
         assertEquals("5", config.getI2b2Domain());
         assertEquals(ExecutionReturnType.PATIENTS, config.getReturnType());
         assertEquals(ExecutionMode.DEBUG, config.getMode());
+        assertEquals("6", config.getUMLSLogin());
+        assertEquals("7", config.getUMLSPassword());
     }
 }

@@ -21,8 +21,10 @@ public class I2b2Configuration extends ConfigurationBase {
         super();
     }
 
-    public I2b2Configuration(URI i2b2ProjectManagementUrl, String i2b2Login, String i2b2Password, String i2b2Project, String i2b2Domain, ExecutionReturnType returnType, ExecutionMode mode) {
-        super(returnType, mode);
+    public I2b2Configuration(URI i2b2ProjectManagementUrl, String i2b2Login, String i2b2Password, String i2b2Project, String i2b2Domain,
+                             ExecutionReturnType returnType, ExecutionMode mode,
+                             String umlsLogin, String umlsPassword) {
+        super(returnType, mode, umlsLogin, umlsPassword);
         setI2b2ProjectManagementUrl(i2b2ProjectManagementUrl);
         setI2b2Login(i2b2Login);
         setI2b2Password(i2b2Password);

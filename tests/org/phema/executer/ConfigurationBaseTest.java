@@ -14,8 +14,8 @@ class ConfigurationBaseTest {
     class ConfgurationTest extends ConfigurationBase {
 
 
-        public ConfgurationTest(ExecutionReturnType returnType, ExecutionMode mode) {
-            super(returnType, mode);
+        public ConfgurationTest(ExecutionReturnType returnType, ExecutionMode mode, String umlsLogin, String umlsPassword) {
+            super(returnType, mode, umlsLogin, umlsPassword);
         }
 
         public ConfgurationTest() {
@@ -33,12 +33,18 @@ class ConfigurationBaseTest {
         ConfgurationTest config = new ConfgurationTest();
         assertEquals(ExecutionReturnType.COUNTS, config.getReturnType());
         assertEquals(ExecutionMode.OPTIMIZED, config.getMode());
+        assertEquals("", config.getUMLSLogin());
+        assertEquals("", config.getUMLSPassword());
     }
 
     @Test
     void constructorWithParams() {
-        ConfgurationTest config = new ConfgurationTest(ExecutionReturnType.PATIENTS, ExecutionMode.DEBUG);
+        String login = "login";
+        String password = "password";
+        ConfgurationTest config = new ConfgurationTest(ExecutionReturnType.PATIENTS, ExecutionMode.DEBUG, login, password);
         assertEquals(ExecutionReturnType.PATIENTS, config.getReturnType());
         assertEquals(ExecutionMode.DEBUG, config.getMode());
+        assertEquals(login, config.getUMLSLogin());
+        assertEquals(password, config.getUMLSPassword());
     }
 }

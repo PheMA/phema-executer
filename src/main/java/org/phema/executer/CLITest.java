@@ -3,15 +3,9 @@ package org.phema.executer;
 import org.phema.executer.cts2.ValueSetRepository;
 import org.phema.executer.cts2.models.ValueSet;
 import org.phema.executer.i2b2.I2b2Configuration;
-import org.phema.executer.i2b2.ProjectManagementService;
-import org.phema.executer.models.ExecutionMode;
-import org.phema.executer.models.ExecutionReturnType;
-import org.phema.executer.util.HttpHelpers;
+import org.phema.executer.util.HttpHelper;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Dictionary;
 import java.util.HashMap;
 
 /**
@@ -32,7 +26,7 @@ public class CLITest {
 
         I2b2Configuration configuration = null;
         try {
-            ValueSetRepository repository = new ValueSetRepository();
+            ValueSetRepository repository = new ValueSetRepository(new HttpHelper());
             HashMap<String, String> parameters = new HashMap<String, String>();
             parameters.put(ValueSetRepository.Parameters.BaseUri, "http://172.16.51.130:8080/value-sets/");
             repository.Initialize(parameters);

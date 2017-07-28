@@ -1,9 +1,10 @@
 package org.phema.executer.cts2;
 
+import org.phema.executer.IHttpHelper;
 import org.phema.executer.IValueSetRepository;
 import org.phema.executer.UniversalNamespaceCache;
 import org.phema.executer.cts2.models.ValueSet;
-import org.phema.executer.util.HttpHelpers;
+import org.phema.executer.util.HttpHelper;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -14,7 +15,6 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -26,7 +26,21 @@ public class ValueSetRepository implements IValueSetRepository {
         public static String BaseUri = "BaseUri";
     }
 
+    public URI getBaseUri() {
+        return baseUri;
+    }
+
     private URI baseUri = null;
+
+    public IHttpHelper getHttpHelper() {
+        return httpHelper;
+    }
+
+    private IHttpHelper httpHelper = null;
+
+    public ValueSetRepository(IHttpHelper httpHelper) {
+        this.httpHelper = httpHelper;
+    }
 
     public void Initialize(HashMap<String, String> parameters) throws Exception {
         baseUri = new URI(parameters.get(Parameters.BaseUri));
@@ -34,8 +48,8 @@ public class ValueSetRepository implements IValueSetRepository {
 
     public ArrayList<ValueSet> Search(String searchTerm) {
         try {
-            URI searchUri = HttpHelpers.Concatenate(baseUri, String.format("valuesets?matchvalue=%s", searchTerm));
-            Document result = HttpHelpers.GetXml(searchUri);
+            URI searchUri = httpHelper.ConcatenateUri(baseUri, String.format("valuesets?matchvalue=%s", searchTerm));
+            Document result = httpHelper.GetXml(searchUri);
             if (result == null) {
                 return null;
             }
@@ -49,7 +63,7 @@ public class ValueSetRepository implements IValueSetRepository {
             for (int index = 0; index < entries.getLength(); index++) {
                 Node entry = entries.item(index);
                 NamedNodeMap attributes = entry.getAttributes();
-                ValueSet valueSet = new ValueSet(attributes.getNamedItem("formalName").getTextContent(), attributes.getNamedItem("valueSetName").getTextContent());
+                ValueSet valueSet = new ValueSet(attributes.getNamedItem("valueSetName").getTextContent(), attributes.getNamedItem("formalName").getTextContent());
                 valueSets.add(valueSet);
             }
             return valueSets;

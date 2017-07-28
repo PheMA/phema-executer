@@ -1,7 +1,8 @@
 package org.phema.executer.i2b2;
 
+import org.phema.executer.IHttpHelper;
 import org.phema.executer.UniversalNamespaceCache;
-import org.phema.executer.util.HttpHelpers;
+import org.phema.executer.util.HttpHelper;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -19,8 +20,8 @@ import java.util.List;
  */
 
 public class ProjectManagementService extends I2b2ServiceBase {
-    public ProjectManagementService(I2b2Configuration configuration) {
-        super(configuration);
+    public ProjectManagementService(I2b2Configuration configuration, IHttpHelper httpHelper) {
+        super(configuration, httpHelper);
     }
 
     public String login() throws Exception {
@@ -30,7 +31,7 @@ public class ProjectManagementService extends I2b2ServiceBase {
         message = message.replace("{{password}}", configuration.getI2b2Password());
         Document document = getMessage();
 
-        Document result = HttpHelpers.PostXml(new URI(configuration.getI2b2ProjectManagementUrl().toString() + "getServices"), document);
+        Document result = httpHelper.PostXml(new URI(configuration.getI2b2ProjectManagementUrl().toString() + "getServices"), document);
         XPath xPath = XPathFactory.newInstance().newXPath();
         NamespaceContext context = new UniversalNamespaceCache(result, true);
         xPath.setNamespaceContext(context);

@@ -7,6 +7,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.phema.executer.IHttpHelper;
 import org.phema.executer.util.XmlHelpers;
 import org.w3c.dom.Document;
 
@@ -20,10 +21,12 @@ import java.util.Scanner;
 public class I2b2ServiceBase {
     protected String message = "";
     protected I2b2Configuration configuration = null;
+    protected IHttpHelper httpHelper = null;
 
 
-    public I2b2ServiceBase(I2b2Configuration configuration) {
+    public I2b2ServiceBase(I2b2Configuration configuration, IHttpHelper httpHelper) {
         this.configuration = configuration;
+        this.httpHelper = httpHelper;
     }
 
     private String getFile(String fileName) {

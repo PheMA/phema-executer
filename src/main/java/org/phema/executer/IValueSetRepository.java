@@ -11,4 +11,5 @@ import java.util.HashMap;
 public interface IValueSetRepository {
     void Initialize(HashMap<String, String> parameters) throws Exception;
     ArrayList<ValueSet> Search(String searchTerm);
+    ValueSet GetByOID(String oid);
 }

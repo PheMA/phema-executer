@@ -4,7 +4,6 @@ import org.phema.executer.IHttpHelper;
 import org.phema.executer.IValueSetRepository;
 import org.phema.executer.UniversalNamespaceCache;
 import org.phema.executer.cts2.models.ValueSet;
-import org.phema.executer.util.HttpHelper;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -68,6 +67,34 @@ public class ValueSetRepository implements IValueSetRepository {
             }
             return valueSets;
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public ValueSet GetByOID(String oid) {
+        try {
+            URI searchUri = httpHelper.ConcatenateUri(baseUri, String.format("valueset/%s", oid));
+            Document result = httpHelper.GetXml(searchUri);
+            if (result == null) {
+                return null;
+            }
+
+            XPath xPath = XPathFactory.newInstance().newXPath();
+            NamespaceContext context = new UniversalNamespaceCache(result, true);
+            xPath.setNamespaceContext(context);
+
+            // For now we're just checking if the particular node exists - if not, we assume it's "not found" and move on.
+            // If need be in the future, an actual "not found" returns a response with a parent node of UnknownValueSet.
+            Node entry = (Node)xPath.evaluate("//valueSetCatalogEntry", result.getDocumentElement(), XPathConstants.NODE);
+            if (entry == null) {
+                return null;
+            }
+
+            NamedNodeMap attributes = entry.getAttributes();
+            ValueSet valueSet = new ValueSet(attributes.getNamedItem("valueSetName").getTextContent(), attributes.getNamedItem("formalName").getTextContent());
+            return valueSet;
         } catch (Exception e) {
             e.printStackTrace();
         }

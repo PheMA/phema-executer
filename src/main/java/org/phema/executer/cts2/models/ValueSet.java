@@ -31,4 +31,17 @@ public class ValueSet {
     public void setName(String name) {
         this.name = name;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) { return false; }
+        if (obj == this) { return true; }
+        if (!(obj instanceof ValueSet)) { return false; }
+        ValueSet otherValueSet = (ValueSet)obj;
+        if (otherValueSet.getOid().equals(this.getOid())) {
+            return otherValueSet.getName().equals(this.getName());
+        }
+
+        return false;
+    }
 }

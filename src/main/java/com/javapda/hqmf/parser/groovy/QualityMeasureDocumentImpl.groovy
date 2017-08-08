@@ -2,6 +2,10 @@ package com.javapda.hqmf.parser.groovy;
 import com.javapda.hqmf.QualityMeasureDocument;
 
 import groovy.util.slurpersupport.GPathResult
+import groovy.util.slurpersupport.NodeChild
+import org.phema.executer.cts2.models.ValueSet
+
+import java.util.stream.Collectors
 
 public class QualityMeasureDocumentImpl implements QualityMeasureDocument {
    GPathResult qrdadoc
@@ -39,7 +43,6 @@ public class QualityMeasureDocumentImpl implements QualityMeasureDocument {
    }
    @Override
    public String getMeasureIdentifier() {
-    
           for (subjectOf in qrdadoc.subjectOf) {
            if (subjectOf.measureAttribute.code.@nullFlavor == "OTH") {
              if (subjectOf.measureAttribute.code.originalText.text() == "eMeasure Identifier") {
@@ -167,9 +170,40 @@ public class QualityMeasureDocumentImpl implements QualityMeasureDocument {
            }
 
       }
-      return -243 
-
+      return -243
    }
+
+    private addValueSetNode(NodeChild node, ArrayList<ValueSet> valueSets) {
+        ValueSet valueSet = new ValueSet(node.@valueSet.text(), node.displayName.@value.text())
+        if (!valueSets.contains(valueSet)) {
+            valueSets.add(valueSet)
+        }
+    }
+
+    public ArrayList<ValueSet> getAllElementValueSets() {
+        ArrayList<ValueSet> valueSets = new ArrayList<ValueSet>()
+        for (dataEntry in qrdadoc.component.dataCriteriaSection.entry) {
+            // Laboratory results
+            if (!dataEntry.observationCriteria.code.isEmpty()) {
+                NodeChild code = dataEntry.observationCriteria.code.first()
+                addValueSetNode(code, valueSets)
+            }
+            // Conditions/diagnoses
+            else if (!dataEntry.observationCriteria.value.isEmpty()) {
+                NodeChild value = dataEntry.observationCriteria.value.first()
+                addValueSetNode(value, valueSets)
+            }
+            // Medications
+            else if (!dataEntry.substanceAdministrationCriteria.participation.role.playingMaterial.code.isEmpty()) {
+                NodeChild value = dataEntry.substanceAdministrationCriteria.participation.role.playingMaterial.code.first()
+                addValueSetNode(value, valueSets)
+            }
+        }
+
+
+        return valueSets;
+    }
+
    @Override
    public String getSupplementalFields() {
       for (subjectOf in qrdadoc.subjectOf) {

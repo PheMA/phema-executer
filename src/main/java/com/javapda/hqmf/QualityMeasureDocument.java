@@ -1,5 +1,9 @@
 package com.javapda.hqmf;
 
+import org.phema.executer.cts2.models.ValueSet;
+
+import java.util.ArrayList;
+
 public interface QualityMeasureDocument {
 	String getMeasureType();
 	
@@ -37,4 +41,6 @@ public interface QualityMeasureDocument {
 
 	String getPayerGuid();
 
+
+	ArrayList<ValueSet> getAllElementValueSets();
 }

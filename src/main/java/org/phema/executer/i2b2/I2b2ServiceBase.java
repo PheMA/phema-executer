@@ -1,18 +1,10 @@
 package org.phema.executer.i2b2;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
-import org.phema.executer.IHttpHelper;
+import org.phema.executer.interfaces.IHttpHelper;
 import org.phema.executer.util.XmlHelpers;
 import org.w3c.dom.Document;
 
 import java.io.*;
-import java.net.URI;
 import java.util.Scanner;
 
 /**

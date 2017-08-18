@@ -1,7 +1,7 @@
 package org.phema.executer.cts2;
 
-import org.phema.executer.IHttpHelper;
-import org.phema.executer.IValueSetRepository;
+import org.phema.executer.interfaces.IHttpHelper;
+import org.phema.executer.interfaces.IValueSetRepository;
 import org.phema.executer.UniversalNamespaceCache;
 import org.phema.executer.cts2.models.ValueSet;
 import org.w3c.dom.Document;

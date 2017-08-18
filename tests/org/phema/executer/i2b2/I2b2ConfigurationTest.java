@@ -1,7 +1,7 @@
 package org.phema.executer.i2b2;
 
 import org.junit.jupiter.api.Test;
-import org.phema.executer.models.ExecutionMode;
+import org.phema.executer.models.ExecutionModeType;
 import org.phema.executer.models.ExecutionReturnType;
 
 import java.net.URI;
@@ -22,14 +22,14 @@ class I2b2ConfigurationTest {
         assertEquals("", config.getI2b2Project());
         assertEquals("", config.getI2b2Domain());
         assertEquals(ExecutionReturnType.COUNTS, config.getReturnType());
-        assertEquals(ExecutionMode.OPTIMIZED, config.getMode());
+        assertEquals(ExecutionModeType.OPTIMIZED, config.getMode());
     }
 
     @Test
     void constructorWithParams() {
         I2b2Configuration config = null;
         try {
-            config = new I2b2Configuration(new URI("http://test.com"), "2", "3", "4", "5", ExecutionReturnType.PATIENTS, ExecutionMode.DEBUG,
+            config = new I2b2Configuration(new URI("http://test.com"), "2", "3", "4", "5", ExecutionReturnType.PATIENTS, ExecutionModeType.DEBUG,
             "6", "7");
         } catch (URISyntaxException e) {
             e.printStackTrace();
@@ -41,7 +41,7 @@ class I2b2ConfigurationTest {
         assertEquals("4", config.getI2b2Project());
         assertEquals("5", config.getI2b2Domain());
         assertEquals(ExecutionReturnType.PATIENTS, config.getReturnType());
-        assertEquals(ExecutionMode.DEBUG, config.getMode());
+        assertEquals(ExecutionModeType.DEBUG, config.getMode());
         assertEquals("6", config.getUMLSLogin());
         assertEquals("7", config.getUMLSPassword());
     }

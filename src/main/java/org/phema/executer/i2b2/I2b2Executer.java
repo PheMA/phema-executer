@@ -1,7 +1,7 @@
 package org.phema.executer.i2b2;
 
 import org.phema.executer.ExecuterBase;
-import org.phema.executer.IConfiguration;
+import org.phema.executer.interfaces.IConfiguration;
 
 /**
  * Created by Luke Rasmussen on 7/19/17.

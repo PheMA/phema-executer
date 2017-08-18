@@ -3,6 +3,9 @@
  */
 package org.phema.executer;
 
+import org.phema.executer.interfaces.IConfiguration;
+import org.phema.executer.interfaces.IExecuter;
+
 public abstract class ExecuterBase implements IExecuter {
     private IConfiguration configuration = null;
 

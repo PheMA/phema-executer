@@ -1,8 +1,7 @@
-package org.phema.executer;
+package org.phema.executer.models;
 
-import org.phema.executer.models.DescriptiveResult;
-import org.phema.executer.models.ExecutionReturnType;
-import org.phema.executer.models.ExecutionMode;
+import org.phema.executer.interfaces.IConfiguration;
+import org.phema.executer.interfaces.IValueSetRepository;
 
 import java.util.ArrayList;
 
@@ -11,7 +10,8 @@ import java.util.ArrayList;
  */
 public abstract class ConfigurationBase implements IConfiguration {
     private ExecutionReturnType ReturnType = ExecutionReturnType.COUNTS;
-    private ExecutionMode Mode = ExecutionMode.OPTIMIZED;
+    private ExecutionModeType Mode = ExecutionModeType.OPTIMIZED;
+    private ValueSetLocationType ValueSetLocation = ValueSetLocationType.LOCAL;
     private String UMLSLogin = "";
     private String UMLSPassword = "";
     private ArrayList<IValueSetRepository> ValueSetRepositories;
@@ -19,7 +19,7 @@ public abstract class ConfigurationBase implements IConfiguration {
     public ConfigurationBase() {
     }
 
-    public ConfigurationBase(ExecutionReturnType returnType, ExecutionMode mode, String umlsLogin, String umlsPassword) {
+    public ConfigurationBase(ExecutionReturnType returnType, ExecutionModeType mode, String umlsLogin, String umlsPassword) {
         setReturnType(returnType);
         setMode(mode);
         setUMLSLogin(umlsLogin);
@@ -34,11 +34,11 @@ public abstract class ConfigurationBase implements IConfiguration {
         ReturnType = returnType;
     }
 
-    public ExecutionMode getMode() {
+    public ExecutionModeType getMode() {
         return Mode;
     }
 
-    public void setMode(ExecutionMode mode) {
+    public void setMode(ExecutionModeType mode) {
         Mode = mode;
     }
 

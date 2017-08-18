@@ -1,4 +1,4 @@
-package org.phema.executer;
+package org.phema.executer.interfaces;
 
 import org.phema.executer.models.DescriptiveResult;
 

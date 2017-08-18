@@ -8,7 +8,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.phema.executer.IHttpHelper;
+import org.phema.executer.interfaces.IHttpHelper;
 import org.w3c.dom.Document;
 
 import java.net.URI;

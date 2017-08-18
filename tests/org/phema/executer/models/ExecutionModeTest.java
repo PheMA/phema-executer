@@ -11,6 +11,6 @@ class ExecutionModeTest {
     @Test
     void getValue() {
         // Simple check that we can convert enum to int
-        assertEquals(1, ExecutionMode.OPTIMIZED.getValue());
+        assertEquals(1, ExecutionModeType.OPTIMIZED.getValue());
     }
 }

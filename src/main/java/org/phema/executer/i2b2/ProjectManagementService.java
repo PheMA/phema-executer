@@ -1,8 +1,7 @@
 package org.phema.executer.i2b2;
 
-import org.phema.executer.IHttpHelper;
+import org.phema.executer.interfaces.IHttpHelper;
 import org.phema.executer.UniversalNamespaceCache;
-import org.phema.executer.util.HttpHelper;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;

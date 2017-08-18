@@ -1,8 +1,8 @@
 package org.phema.executer.i2b2;
 
-import org.phema.executer.ConfigurationBase;
+import org.phema.executer.models.ConfigurationBase;
 import org.phema.executer.models.DescriptiveResult;
-import org.phema.executer.models.ExecutionMode;
+import org.phema.executer.models.ExecutionModeType;
 import org.phema.executer.models.ExecutionReturnType;
 
 import java.net.URI;
@@ -22,7 +22,7 @@ public class I2b2Configuration extends ConfigurationBase {
     }
 
     public I2b2Configuration(URI i2b2ProjectManagementUrl, String i2b2Login, String i2b2Password, String i2b2Project, String i2b2Domain,
-                             ExecutionReturnType returnType, ExecutionMode mode,
+                             ExecutionReturnType returnType, ExecutionModeType mode,
                              String umlsLogin, String umlsPassword) {
         super(returnType, mode, umlsLogin, umlsPassword);
         setI2b2ProjectManagementUrl(i2b2ProjectManagementUrl);

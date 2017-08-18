@@ -17,4 +17,12 @@ public abstract class ExecuterBase implements IExecuter {
     public void setConfiguration(IConfiguration configuration) {
         this.configuration = configuration;
     }
+
+    public void loadValueSets() {
+        if (configuration == null) {
+            throw new NullPointerException("You must specify a configuration for the executer");
+        }
+
+
+    }
 }

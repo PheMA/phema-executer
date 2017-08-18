@@ -1,12 +1,12 @@
 package com.javapda.hqmf;
 
-import static org.junit.Assert.*;
+import com.javapda.hqmf.testsupport.TestData;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import org.junit.Test;
-
-import com.javapda.hqmf.testsupport.TestData;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
 public class QualityMeasureDocumentFactoryTest {
@@ -14,16 +14,23 @@ public class QualityMeasureDocumentFactoryTest {
 	@Test public void test() {
 		assertNotNull(QualityMeasureDocumentFactory.create(TestData.xmlFileCms129v4()));
 	}
-	@Test(expected=RuntimeException.class) 
+
+	@Test
 	public void testBadFile() {
-		assertNotNull(QualityMeasureDocumentFactory.create(TestData.nonExistentFile()));
+		assertThrows(RuntimeException.class, () -> {
+			assertNotNull(QualityMeasureDocumentFactory.create(TestData.nonExistentFile()));
+		});
 	}
-	@Test(expected=RuntimeException.class) 
+	@Test
 	public void testNullFile() {
-		assertNotNull(QualityMeasureDocumentFactory.create((File)null));
+		assertThrows(RuntimeException.class, () -> {
+			assertNotNull(QualityMeasureDocumentFactory.create((File)null));
+		});
 	}
-	@Test(expected=RuntimeException.class) 
+	@Test
 	public void testNullStringXmlText() {
-		assertNotNull(QualityMeasureDocumentFactory.create((String)null));
+		assertThrows(RuntimeException.class, () -> {
+			assertNotNull(QualityMeasureDocumentFactory.create((String)null));
+		});
 	}
 }

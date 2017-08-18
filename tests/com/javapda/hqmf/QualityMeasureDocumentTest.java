@@ -1,19 +1,22 @@
 package com.javapda.hqmf;
 
-import static org.junit.Assert.*;
-
-import org.apache.log4j.Logger;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.javapda.hqmf.testsupport.TestData;
+import org.apache.log4j.Logger;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+//import org.junit.Before;
 
 public class QualityMeasureDocumentTest {
 	protected static Logger log = Logger
 			.getLogger(QualityMeasureDocumentTest.class);	
 
 	private QualityMeasureDocument qualityMeasureDocument;
-	@Before public void setup() {
+
+	@BeforeEach
+	public void setup() {
 		initializeVariables();
 	}
 	

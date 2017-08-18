@@ -1,11 +1,10 @@
 package com.javapda.hqmf;
 
-import static org.junit.Assert.*;
-
-import org.apache.log4j.Logger;
-import org.junit.Test;
-
 import com.javapda.hqmf.testsupport.TestData;
+import org.apache.log4j.Logger;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class QualityMeasureDocumentRendererTest {
 	protected static Logger log = Logger.getLogger(QualityMeasureDocumentRendererTest.class);

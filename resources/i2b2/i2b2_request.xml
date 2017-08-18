@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<i2b2:request xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xmlns:i2b2="http://www.i2b2.org/xsd/hive/msg/1.1/"
-              xmlns:pm="http://www.i2b2.org/xsd/cell/pm/1.1/">
+<i2b2:request
+        xmlns:i2b2="http://www.i2b2.org/xsd/hive/msg/1.1/"
+>
     <message_header>
         <i2b2_version_compatible>0.3</i2b2_version_compatible>
         <hl7_version_compatible>2.4</hl7_version_compatible> <!-- HL7 REQUIRED -->

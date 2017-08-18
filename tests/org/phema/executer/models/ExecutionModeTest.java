@@ -2,7 +2,7 @@ package org.phema.executer.models;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Created by Luke Rasmussen on 7/17/17.

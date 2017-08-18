@@ -1,12 +1,12 @@
 package com.javapda.hqmf.testsupport;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import com.javapda.hqmf.QualityMeasureDocument;
+import com.javapda.hqmf.QualityMeasureDocumentFactory;
 
 import java.io.File;
 
-import com.javapda.hqmf.QualityMeasureDocument;
-import com.javapda.hqmf.QualityMeasureDocumentFactory;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestData {
 	public static File xmlFilesDirectory() {

@@ -1,12 +1,12 @@
 package com.javapda.hqmf;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
 
 public class QualityMeasureDocumentRenderer {
 	protected static Logger log = Logger.getLogger(QualityMeasureDocumentRenderer.class);

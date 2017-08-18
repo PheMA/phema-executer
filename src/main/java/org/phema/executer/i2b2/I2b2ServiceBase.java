@@ -4,7 +4,8 @@ import org.phema.executer.interfaces.IHttpHelper;
 import org.phema.executer.util.XmlHelpers;
 import org.w3c.dom.Document;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.Scanner;
 
 /**
@@ -12,11 +13,11 @@ import java.util.Scanner;
  */
 public class I2b2ServiceBase {
     protected String message = "";
-    protected I2b2Configuration configuration = null;
+    protected I2B2ExecutionConfiguration configuration = null;
     protected IHttpHelper httpHelper = null;
 
 
-    public I2b2ServiceBase(I2b2Configuration configuration, IHttpHelper httpHelper) {
+    public I2b2ServiceBase(I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper) {
         this.configuration = configuration;
         this.httpHelper = httpHelper;
     }

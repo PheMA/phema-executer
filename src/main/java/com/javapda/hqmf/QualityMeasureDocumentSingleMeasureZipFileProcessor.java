@@ -1,10 +1,10 @@
 package com.javapda.hqmf;
 
+import com.javapda.util.ZipUtil;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.javapda.util.ZipUtil;
 
 public class QualityMeasureDocumentSingleMeasureZipFileProcessor extends BaseZipFileProcessor<QualityMeasureDocument>{
 	public QualityMeasureDocumentSingleMeasureZipFileProcessor(File zipFile2) {

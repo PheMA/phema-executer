@@ -1,11 +1,9 @@
-package com.javapda.hqmf.parser.groovy;
-import com.javapda.hqmf.QualityMeasureDocument;
+package com.javapda.hqmf.parser.groovy
 
+import com.javapda.hqmf.QualityMeasureDocument
 import groovy.util.slurpersupport.GPathResult
 import groovy.util.slurpersupport.NodeChild
 import org.phema.executer.cts2.models.ValueSet
-
-import java.util.stream.Collectors
 
 public class QualityMeasureDocumentImpl implements QualityMeasureDocument {
    GPathResult qrdadoc

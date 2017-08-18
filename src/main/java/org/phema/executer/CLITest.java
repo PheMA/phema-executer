@@ -2,23 +2,19 @@ package org.phema.executer;
 
 import com.javapda.hqmf.QualityMeasureDocument;
 import com.javapda.hqmf.QualityMeasureDocumentFactory;
-import org.phema.executer.cts2.ValueSetRepository;
 import org.phema.executer.cts2.models.ValueSet;
-import org.phema.executer.i2b2.I2b2Configuration;
-import org.phema.executer.util.HttpHelper;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * Created by Luke Rasmussen on 7/19/17.
  */
 public class CLITest {
     public static void main(String[] args) {
-//        I2b2Configuration configuration = null;
+//        I2B2ExecutionConfiguration configuration = null;
 //        try {
-//            configuration = new I2b2Configuration(new URI("http://172.16.51.215:9090/i2b2/services/PMService/"), "demo", "demouser", "Demo", "i2b2demo",
+//            configuration = new I2B2ExecutionConfiguration(new URI("http://172.16.51.215:9090/i2b2/services/PMService/"), "demo", "demouser", "Demo", "i2b2demo",
 //                    ExecutionReturnType.COUNTS, ExecutionMode.OPTIMIZED,
 //                    "test", "test");
 //            ProjectManagementService service = new ProjectManagementService(configuration);
@@ -27,7 +23,7 @@ public class CLITest {
 //            e.printStackTrace();
 //        }
 
-//        I2b2Configuration configuration = null;
+//        I2B2ExecutionConfiguration configuration = null;
 //        try {
 //            ValueSetRepository repository = new ValueSetRepository(new HttpHelper());
 //            HashMap<String, String> parameters = new HashMap<String, String>();

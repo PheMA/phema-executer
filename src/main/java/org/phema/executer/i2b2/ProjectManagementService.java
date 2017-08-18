@@ -1,7 +1,7 @@
 package org.phema.executer.i2b2;
 
-import org.phema.executer.interfaces.IHttpHelper;
 import org.phema.executer.UniversalNamespaceCache;
+import org.phema.executer.interfaces.IHttpHelper;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -19,7 +19,7 @@ import java.util.List;
  */
 
 public class ProjectManagementService extends I2b2ServiceBase {
-    public ProjectManagementService(I2b2Configuration configuration, IHttpHelper httpHelper) {
+    public ProjectManagementService(I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper) {
         super(configuration, httpHelper);
     }
 

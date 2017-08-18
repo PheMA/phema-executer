@@ -1,15 +1,14 @@
 package com.javapda.hqmf;
 
-import java.io.File;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
+import com.javapda.util.ZipUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.math.RandomUtils;
 import org.apache.log4j.Logger;
 
-import com.javapda.util.ZipUtil;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public abstract class BaseZipFileProcessor<T> {
 	protected static Logger log = Logger.getLogger(BaseZipFileProcessor.class);

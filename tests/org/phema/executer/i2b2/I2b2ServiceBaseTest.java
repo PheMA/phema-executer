@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class I2b2ServiceBaseTest {
     @Test
     void loadRequestMessageTemplate() {
-        I2b2ServiceBase service = new I2b2ServiceBase(new I2b2Configuration(), new HttpHelper());
+        I2b2ServiceBase service = new I2b2ServiceBase(new I2B2ExecutionConfiguration(), new HttpHelper());
         service.loadRequest("i2b2_login");
         try {
             assertNotNull(service.getMessage());
@@ -23,7 +23,7 @@ class I2b2ServiceBaseTest {
 
     @Test
     void loadRequest_MissingTemplate() {
-        I2b2ServiceBase service = new I2b2ServiceBase(new I2b2Configuration(), new HttpHelper());
+        I2b2ServiceBase service = new I2b2ServiceBase(new I2B2ExecutionConfiguration(), new HttpHelper());
         assertThrows(NullPointerException.class, () -> { service.loadRequest("blahblah"); });
     }
 

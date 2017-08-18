@@ -1,12 +1,11 @@
 package com.javapda.hqmf;
 
-import java.io.File;
-import java.util.List;
-
+import com.javapda.util.ZipUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
-import com.javapda.util.ZipUtil;
+import java.io.File;
+import java.util.List;
 
 /**
  * To build an executable jar:

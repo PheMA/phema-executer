@@ -1,11 +1,10 @@
 package com.javapda.hqmf;
 
-import java.io.File;
-import java.io.IOException;
-
+import com.javapda.hqmf.parser.groovy.QualityMeasureDocumentImpl;
 import org.apache.commons.io.FileUtils;
 
-import com.javapda.hqmf.parser.groovy.QualityMeasureDocumentImpl;
+import java.io.File;
+import java.io.IOException;
 
 
 public class QualityMeasureDocumentFactory {

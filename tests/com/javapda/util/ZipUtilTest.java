@@ -1,11 +1,11 @@
 package com.javapda.util;
 
-import static org.junit.Assert.*;
-
-import org.apache.log4j.Logger;
-import org.junit.Test;
-
 import com.javapda.hqmf.testsupport.TestData;
+import org.apache.log4j.Logger;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ZipUtilTest {
 	protected static Logger log = Logger.getLogger(ZipUtilTest.class);

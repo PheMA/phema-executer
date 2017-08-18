@@ -1,12 +1,11 @@
 package com.javapda.hqmf;
 
+import com.javapda.hqmf.testsupport.TestData;
+import org.apache.log4j.Logger;
+import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-
-import org.apache.log4j.Logger;
-import org.junit.Test;
-
-import com.javapda.hqmf.testsupport.TestData;
 
 public class QualityMeasureDocumentMainTest {
 	protected static Logger log = Logger

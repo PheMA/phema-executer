@@ -2,9 +2,13 @@ package org.phema.executer;
 
 import com.javapda.hqmf.QualityMeasureDocument;
 import com.javapda.hqmf.QualityMeasureDocumentFactory;
+import org.apache.commons.io.FileUtils;
 import org.phema.executer.cts2.models.ValueSet;
+import org.phema.executer.hqmf.IDocument;
+import org.phema.executer.hqmf.Parser;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -35,8 +39,17 @@ public class CLITest {
 //            e.printStackTrace();
 //        }
 
-        File file = new File("tests/resources/xmlfiles/PhEMA-T2DM-Simple.xml");
-        QualityMeasureDocument document = QualityMeasureDocumentFactory.create(file);
-        ArrayList<ValueSet> valueSets = document.getAllElementValueSets();
+//        File file = new File("tests/resources/xmlfiles/PhEMA-T2DM-Simple.xml");
+//        QualityMeasureDocument document = QualityMeasureDocumentFactory.create(file);
+//        ArrayList<ValueSet> valueSets = document.getAllElementValueSets();
+        File xmlFile = new File("tests/resources/xmlfiles/PhEMA-T2DM-Simple.xml");
+        String hqmf = null;
+        try {
+            hqmf = FileUtils.readFileToString(xmlFile);
+            Parser parser = new Parser();
+            IDocument document = parser.parse(hqmf);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

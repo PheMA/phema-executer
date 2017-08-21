@@ -1,6 +1,8 @@
 package org.phema.executer.util;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -25,6 +27,25 @@ public class XmlHelpers {
         InputSource is = new InputSource(new StringReader(xml));
         return builder.parse(is);
     }
+
+    // Solution from https://stackoverflow.com/a/11146971/5670646
+//    public static Document addNamespaceToDocument(Document document, String prefix, String namespace) {
+//        Element rootElement = document.getDocumentElement();
+//        rootElement.setAttributeNS(namespace, )
+//        // Upgrade the DOM level 1 to level 2 with the correct namespace
+//        Element originalDocumentElement = document.getDocumentElement();
+//        Element newDocumentElement = document.createElementNS(namespace, originalDocumentElement.getNodeName());
+//        // Set the desired namespace and prefix
+//        newDocumentElement.setPrefix(prefix);
+//        // Copy all children
+//        NodeList list = originalDocumentElement.getChildNodes();
+//        while(list.getLength() != 0) {
+//            newDocumentElement.appendChild(list.item(0));
+//        }
+//        // Replace the original element
+//        document.replaceChild(newDocumentElement, originalDocumentElement);
+//        return document;
+//    }
 
     public static String DocumentToString(Document document) throws TransformerException {
         TransformerFactory tf = TransformerFactory.newInstance();

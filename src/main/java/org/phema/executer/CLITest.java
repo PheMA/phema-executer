@@ -42,7 +42,8 @@ public class CLITest {
 //        File file = new File("tests/resources/xmlfiles/PhEMA-T2DM-Simple.xml");
 //        QualityMeasureDocument document = QualityMeasureDocumentFactory.create(file);
 //        ArrayList<ValueSet> valueSets = document.getAllElementValueSets();
-        File xmlFile = new File("tests/resources/xmlfiles/PhEMA-T2DM-Simple.xml");
+        //File xmlFile = new File("tests/resources/xmlfiles/PhEMA-T2DM-Simple.xml");
+        File xmlFile = new File("tests/resources/xmlfiles/CMS129v4.xml");
         String hqmf = null;
         try {
             hqmf = FileUtils.readFileToString(xmlFile);

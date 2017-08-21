@@ -27,7 +27,7 @@ public class UniversalNamespaceCache implements NamespaceContext {
      *            restriction of the search to enhance performance
      */
     public UniversalNamespaceCache(Document document, boolean toplevelOnly) {
-        examineNode(document.getFirstChild(), toplevelOnly);
+        examineNode(document.getDocumentElement(), toplevelOnly);
         System.out.println("The list of the cached namespaces:");
         for (String key : prefix2Uri.keySet()) {
             System.out.println("prefix " + key + ": uri " + prefix2Uri.get(key));

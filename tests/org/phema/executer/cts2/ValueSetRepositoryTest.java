@@ -21,11 +21,11 @@ class ValueSetRepositoryTest {
         public String nextResponse = "";
 
         public Document PostXml(URI uri, Document message) throws Exception {
-            return XmlHelpers.LoadXMLFromString(nextResponse);
+            return XmlHelpers.loadXMLFromString(nextResponse);
         }
 
         public Document GetXml(URI uri) throws Exception {
-            return XmlHelpers.LoadXMLFromString(nextResponse);
+            return XmlHelpers.loadXMLFromString(nextResponse);
         }
     }
 

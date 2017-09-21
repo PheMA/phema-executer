@@ -13,27 +13,27 @@ import static org.junit.jupiter.api.Assertions.*;
 class XmlHelpersTest {
     @Test
     void loadXMLFromString() throws Exception {
-        Document result = XmlHelpers.LoadXMLFromString("<test>Test document</test>");
+        Document result = XmlHelpers.loadXMLFromString("<test>Test document</test>");
         assertNotNull(result);
         assertEquals("Test document", result.getDocumentElement().getTextContent());
     }
 
     @Test
     void loadXMLFromString_Invalid() {
-        assertThrows(Exception.class, () -> { XmlHelpers.LoadXMLFromString("well, this is certainly not XML!"); });
+        assertThrows(Exception.class, () -> { XmlHelpers.loadXMLFromString("well, this is certainly not XML!"); });
     }
 
     @Test
     void documentToString() throws Exception {
         String xml = "<test>Test document</test>";
-        Document document = XmlHelpers.LoadXMLFromString(xml);
-        String resultXml = XmlHelpers.DocumentToString(document);
+        Document document = XmlHelpers.loadXMLFromString(xml);
+        String resultXml = XmlHelpers.documentToString(document);
         assertEquals(xml, resultXml);
     }
 
     @Test
     void documentToString_NullDocument() throws TransformerException {
-        assertEquals("", XmlHelpers.DocumentToString(null));
+        assertEquals("", XmlHelpers.documentToString(null));
     }
 
 }

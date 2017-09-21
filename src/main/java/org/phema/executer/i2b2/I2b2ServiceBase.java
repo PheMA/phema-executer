@@ -50,6 +50,6 @@ public class I2b2ServiceBase {
     }
 
     public Document getMessage() throws Exception {
-        return XmlHelpers.LoadXMLFromString(message);
+        return XmlHelpers.loadXMLFromString(message);
     }
 }

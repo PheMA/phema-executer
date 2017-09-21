@@ -21,13 +21,13 @@ public class HttpHelper implements IHttpHelper {
     public Document PostXml(URI uri, Document message) throws Exception {
         HttpClient client = new DefaultHttpClient();
         HttpPost post = new HttpPost(uri);
-        String messageText = XmlHelpers.DocumentToString(message);
+        String messageText = XmlHelpers.documentToString(message);
         HttpEntity entity = new ByteArrayEntity(messageText.getBytes("UTF-8"),
                 org.apache.http.entity.ContentType.create("application/xml"));
         post.setEntity(entity);
         HttpResponse response = client.execute(post);
         String result = EntityUtils.toString(response.getEntity());
-        return XmlHelpers.LoadXMLFromString(result);
+        return XmlHelpers.loadXMLFromString(result);
     }
 
     public Document GetXml(URI uri) throws Exception {
@@ -37,7 +37,7 @@ public class HttpHelper implements IHttpHelper {
         get.setHeader("Content-Type", "application/xml");
         HttpResponse response = client.execute(get);
         String result = EntityUtils.toString(response.getEntity());
-        return XmlHelpers.LoadXMLFromString(result);
+        return XmlHelpers.loadXMLFromString(result);
     }
 
     public URI ConcatenateUri(URI base, String extraPath) throws URISyntaxException {

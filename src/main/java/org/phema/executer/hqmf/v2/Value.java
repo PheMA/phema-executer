@@ -36,7 +36,7 @@ public class Value {
         this.entry = entry;
         XPath xPath = XmlHelpers.createXPath(entry.getOwnerDocument());
         Element entryElement = (Element)entry;
-        this.type = XmlHelpers.getAttributeValue(entryElement, xPath, "./@xsi:type", "");
+        this.type = XmlHelpers.getAttributeValue(entryElement, xPath, "./@type", "");
         if (this.type.length() == 0) {
             this.type = defaultType;
         }

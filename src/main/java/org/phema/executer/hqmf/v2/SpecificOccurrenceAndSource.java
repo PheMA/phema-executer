@@ -21,10 +21,10 @@ public class SpecificOccurrenceAndSource {
     private String id;
     private String localVariableName;
     private boolean isVariable;
-    private HashMap<String, Object> dataCriteriaReferences;
+    private HashMap<String, DataCriteria> dataCriteriaReferences;
     private HashMap<String, String> occurrencesMap;
 
-    public SpecificOccurrenceAndSource(Node entry, String id, String localVariableName, HashMap<String, Object> dataCriteriaReferences, HashMap<String, String> occurrencesMap) {
+    public SpecificOccurrenceAndSource(Node entry, String id, String localVariableName, HashMap<String, DataCriteria> dataCriteriaReferences, HashMap<String, String> occurrencesMap) {
         this.entry = entry;
         this.id = id;
         this.localVariableName = localVariableName;
@@ -62,10 +62,16 @@ public class SpecificOccurrenceAndSource {
                     specificOccurrenceConst, specificOccurrence);
         }
         else if (sourceDef != null) {
-            // TODO: Implement this code
             String extension = XmlHelpers.getAttributeValue(sourceDef, this.xPath, "./criteriaReference/id/@extension", "");
             String root = XmlHelpers.getAttributeValue(sourceDef, this.xPath, "./criteriaReference/id/@root", "");
-            //        ["#{extension}_#{root}_source", root, extension] # return the soruce data criteria itself, the rest will be blank
+            // Return the source data criteria itself, the rest will be blank
+            return new HashMap<String, String>() {{
+                put("sourceDataCriteria", String.format("%s_%s_source", extension, root));
+                put("sourceDataCriteriaRoot", root);
+                put("sourceDataCriteriaExtension", extension);
+                put("specificOccurrence", null);
+                put("specificOccurrenceConst", null);
+            }};
         }
 
         return null;

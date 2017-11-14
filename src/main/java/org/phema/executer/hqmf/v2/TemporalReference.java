@@ -29,11 +29,10 @@ public class TemporalReference {
             this.type = typeAttrValue;
         }
         this.reference = new Reference((Node)xPath.evaluate("./*/id", this.entry, XPathConstants.NODE));
-        // FIXME XPath uses qdm namespace, but that doesn't exist in our example doucments
-//        Node rangeDef = (Node)xPath.evaluate("./qdm:temporalInformation/qdm:delta", this.entry, XPathConstants.NODE);
-//        if (rangeDef != null) {
-//            this.range = new Range(rangeDef, "IVL_PQ");
-//        }
+        Node rangeDef = (Node)xPath.evaluate("./temporalInformation/delta", this.entry, XPathConstants.NODE);
+        if (rangeDef != null) {
+            this.range = new Range(rangeDef, "IVL_PQ");
+        }
     }
 
     public String getType() {

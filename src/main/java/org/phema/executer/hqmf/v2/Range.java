@@ -2,6 +2,7 @@ package org.phema.executer.hqmf.v2;
 
 import org.phema.executer.hqmf.models.AnyValue;
 import org.phema.executer.hqmf.v2.Value;
+import org.phema.executer.util.ConversionHelpers;
 import org.phema.executer.util.XmlHelpers;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -31,13 +32,19 @@ public class Range {
 
         XPath xPath = XmlHelpers.createXPath(entry.getOwnerDocument());
         if (this.type == null) {
-            this.type = XmlHelpers.getAttributeValue((Element) this.entry, xPath, "./@xsi:type", "");
+            this.type = XmlHelpers.getAttributeValue((Element) this.entry, xPath, "./@type", "");
         }
         String defaultName = defaultElementName();
         this.low = optionalValue(xPath, defaultName + "/low", defaultBoundsType());
         this.high = optionalValue(xPath, defaultName + "/high", defaultBoundsType());
-        //      # Unset low bound to resolve verbose value bounds descriptions
-        //TODO: @low = nil if (@high.try(:value) && @high.value.to_i > 0) && (@low.try(:value) && @low.value.try(:to_i) == 0)
+        // Unset low bound to resolve verbose value bounds descriptions
+        if (this.high != null && this.high instanceof Value && this.low != null && this.low instanceof Value) {
+            Integer highValue = ConversionHelpers.tryIntParse(((Value) this.high).getValue());
+            Integer lowValue = ConversionHelpers.tryIntParse(((Value)this.low).getValue());
+            if (highValue != null && highValue > 0 && lowValue != null && lowValue == 0) {
+                this.low = null;
+            }
+        }
         this.width = optionalValue(xPath, defaultName + "/width", "PQ");
     }
 
@@ -71,7 +78,9 @@ public class Range {
         if (valueDef == null) {
             return "";
         }
-        if (valueDef.getAttributes().getNamedItem("flavorId").getNodeValue().equals("ANY.NONNULL")) {
+
+        Node flavorNode = valueDef.getAttributes().getNamedItem("flavorId");
+        if (flavorNode != null && flavorNode.getNodeValue().equals("ANY.NONNULL")) {
             return new AnyValue();
         }
 

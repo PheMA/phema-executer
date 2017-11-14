@@ -84,7 +84,7 @@ public class SubsetOperator {
         }
 
         if (valueDef != null) {
-            String valueType = XmlHelpers.getAttributeValue(valueDef, xPath, "./@xsi:type", "");
+            String valueType = XmlHelpers.getAttributeValue(valueDef, xPath, "./@type", "");
             if (valueType.equals("ANY")) {
                 this.value = new AnyValue();
             }

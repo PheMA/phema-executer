@@ -14,10 +14,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Hashtable;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by Luke Rasmussen on 8/19/17.
@@ -25,6 +22,7 @@ import java.util.Map;
 public class Document implements IDocument {
     private IdGenerator idGenerator = new IdGenerator();
     private org.w3c.dom.Document document = null;
+    private org.w3c.dom.Document entry = null;
     private XPath documentXPath = null;
     private String id = "";
     private String hqmfSetId = "";
@@ -32,8 +30,10 @@ public class Document implements IDocument {
     private String cmsId = "";
     private ArrayList<Attribute> attributes = null;
     private ArrayList<DataCriteria> dataCriteria = null;
-    private ArrayList sourceDataCriteria = null;
+    private ArrayList<DataCriteria> sourceDataCriteria = null;
     private ArrayList referenceIds = null;
+    private HashMap<String, DataCriteria> dataCriteriaReferences;
+    private HashMap<String, String> occurrencesMap;
 
     public static final Map<String,String> NAMESPACES;
     static{
@@ -48,10 +48,27 @@ public class Document implements IDocument {
     public Document(String hqmfContents, boolean useDefaultMeasurePeriod) throws Exception {
         setupDefaultValues(hqmfContents, useDefaultMeasurePeriod);
         extractCriteria();
+
+        // Extract the population criteria and population collections
+        DocumentPopulationHelper popHelper = new DocumentPopulationHelper((Node)this.entry.getDocumentElement(), (Node)this.document.getDocumentElement(), this, this.idGenerator, this.referenceIds);
+        /*
+                pop_helper = HQMF2::DocumentPopulationHelper.new(@entry, @doc, self, @id_generator, @reference_ids)
+        @populations, @population_criteria = pop_helper.extract_populations_and_criteria
+
+      # Remove any data criteria from the main data criteria list that already has an equivalent member
+      #  and no references to it. The goal of this is to remove any data criteria that should not
+      #  be purely a source.
+        @data_criteria.reject! do |dc|
+                criteria_covered_by_criteria?(dc)
+                end*/
     }
 
     private void extractCriteria() throws Exception {
         NodeList extractedCriteria = (NodeList)documentXPath.evaluate("QualityMeasureDocument/component/dataCriteriaSection/entry", document, XPathConstants.NODESET);
+        // Extract the source data criteria from data criteria
+        Object[] result = SourceDataCriteriaHelper.getSourceDataCriteriaList(extractedCriteria, dataCriteriaReferences, occurrencesMap);
+        this.sourceDataCriteria = (ArrayList<DataCriteria>)result[0];
+        HashMap<String, String> collapsedSourceDataCriteriaMap = (HashMap<String, String>)result[1];
         for (int index = 0; index < extractedCriteria.getLength(); index++) {
             Node criterionNode = extractedCriteria.item(index);
             DataCriteria criterion = new DataCriteria(criterionNode, null, null);
@@ -61,11 +78,6 @@ public class Document implements IDocument {
 
     private String getAttributeValue(Element element, String xpath, String defaultValue) throws XPathExpressionException {
         return XmlHelpers.getAttributeValue(element, documentXPath, xpath, defaultValue);
-//        String value = (String)documentXPath.evaluate(xpath, element, XPathConstants.STRING);
-//        if (value.length() == 0) {
-//            return defaultValue;
-//        }
-//        return value;
     }
 
     private String getAttributeValue(Element element, String xpath) throws XPathExpressionException {
@@ -74,11 +86,6 @@ public class Document implements IDocument {
 
     private String getAttributeValueFromDocument(String xpath) throws XPathExpressionException {
         return getAttributeValue(document.getDocumentElement(), xpath);
-//        String value = (String)xPath.evaluate(mainXpath, document.getDocumentElement(), XPathConstants.STRING);
-//        if (value.length() == 0) {
-//            return "";
-//        }
-//        return value;
     }
 
     private String getAttributeValueFromDocument(String mainXpath, String alternateXpath) throws XPathExpressionException {
@@ -102,7 +109,7 @@ public class Document implements IDocument {
         Node idNode = (Node)documentXPath.evaluate("./id", attributeNode, XPathConstants.NODE);
         Identifier identifierObject = null;
         if (idNode != null) {
-            identifierObject = new Identifier(getAttributeValue((Element)idNode, "./id/@xsi:type"), id,
+            identifierObject = new Identifier(getAttributeValue((Element)idNode, "./id/@type"), id,
                     getAttributeValue((Element)idNode, "./id/@extension"));
         }
 
@@ -119,7 +126,7 @@ public class Document implements IDocument {
         Node valueNode = (Node)documentXPath.evaluate("./value", attributeNode, XPathConstants.NODE);
         Object valueObject = null;
         if (valueNode != null) {
-            valueObject = handleAttributeValue((Element)valueNode, value);
+            valueObject = handleAttributeValue((Element)attributeNode, value);
         }
 
         // Handle the CMS identifier
@@ -127,13 +134,13 @@ public class Document implements IDocument {
             cmsId = String.format("CMS%sv%s", value, hqmfVersionNumber);
         }
 
-        return new Attribute(id, code, value, null, name, identifierObject, codeObject, null);
+        return new Attribute(id, code, value, null, name, identifierObject, codeObject, valueObject);
     }
 
     private Coded handleAttributeCode(Element attribute, String code, String name) throws XPathExpressionException {
         String nullFlavor = getAttributeValue(attribute, "./code/@nullFlavor");
         String originalText = getAttributeValue(attribute, "./code/originalText/@value");
-        Coded codeObject = new Coded(getAttributeValue(attribute, "./code/@xsi:type", "CD"),
+        Coded codeObject = new Coded(getAttributeValue(attribute, "./code/@type", "CD"),
                 getAttributeValue(attribute, "./code/@codeSystem"),
                 code,
                 getAttributeValue(attribute, "./code/@valueSet"),
@@ -144,7 +151,7 @@ public class Document implements IDocument {
     }
 
     private Object handleAttributeValue(Element attribute, String value) throws XPathExpressionException {
-        String type = getAttributeValue(attribute, "./value/@xsi:type");
+        String type = getAttributeValue(attribute, "./value/@type");
         switch (type) {
             case "II" :
                 if (value == null) {
@@ -186,6 +193,7 @@ public class Document implements IDocument {
     private void setupDefaultValues(String hqmfContents, boolean useDefaultMeasurePeriod) throws Exception {
         idGenerator = new IdGenerator();
         document = XmlHelpers.loadXMLFromString(hqmfContents);
+        entry = document;
 //        documentXPath = XPathFactory.newInstance().newXPath();
 //        //XPath xPath = XPathFactory.newInstance().newXPath();
 //        NamespaceContext context = new UniversalNamespaceCache(document, true);
@@ -201,13 +209,11 @@ public class Document implements IDocument {
 
         buildMeasureAttributes();
 
-        // TODO - find types for criteria
-        dataCriteria = new ArrayList();
-        sourceDataCriteria = new ArrayList();
+        dataCriteria = new ArrayList<>();
+        sourceDataCriteria = new ArrayList<>();
 
-        // TODO
-//        @data_criteria_references = {}
-//        @occurrences_map = {}
+        dataCriteriaReferences = new HashMap<>();
+        occurrencesMap = new HashMap<>();
 
         // Used to keep track of referenced data criteria ids
         referenceIds = new ArrayList();

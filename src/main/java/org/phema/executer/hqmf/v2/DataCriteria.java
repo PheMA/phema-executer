@@ -24,7 +24,7 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
     private String property;
     private String type;
     private String status;
-    private String value;
+    private Object value;
     private String effectiveTime;
     private String section;
     private String derivationOperator;
@@ -36,15 +36,17 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
     private String sourceDataCriteriaRoot;
     private String specificOccurrenceConst;
     private String sourceDataCriteriaExtension;
-    private String specificOccurrence;
+    private boolean specificOccurrence;
     private ArrayList<String> comments;
     private boolean isDerivedSpecificOccurrenceVariable;
     private String definition;
     private boolean variable;
+    private String codeListId;
+
     private String localVariableName;
     private Node entry;
     private XPath xPath;
-    private HashMap<String, Object> dataCriteriaReferences;
+    private HashMap<String, DataCriteria> dataCriteriaReferences;
     private HashMap<String, String> occurrencesMap;
     private ArrayList<String> templateIds;
     private ArrayList<TemporalReference> temporalReferences;
@@ -61,7 +63,7 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
     private static final String CRITERIA_GLOB = "*[substring(name(),string-length(name())-7) = 'Criteria']";
 
     // Create a new instance based on the supplied HQMF entry
-    public DataCriteria(Node entry, HashMap<String, Object> dataCriteriaReferences, HashMap<String, String> occurrencesMap) throws Exception {
+    public DataCriteria(Node entry, HashMap<String, DataCriteria> dataCriteriaReferences, HashMap<String, String> occurrencesMap) throws Exception {
         this.entry = entry;
         if (entry != null) {
             this.xPath = XmlHelpers.createXPath(this.entry.getOwnerDocument());
@@ -75,14 +77,23 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
 
         SpecificOccurrenceAndSource obtainSpecificAndSource = new SpecificOccurrenceAndSource(this.entry, this.id, this.localVariableName, this.dataCriteriaReferences, this.occurrencesMap);
         HashMap<String, String>  results = obtainSpecificAndSource.extractSpecificOccurrencesAndSourceDataCriteria();
-        this.sourceDataCriteria = results.get("sourceDataCriteria");
-        this.sourceDataCriteriaRoot = results.get("sourceDataCriteriaRoot");
-        this.sourceDataCriteriaExtension = results.get("sourceDataCriteriaExtension");
-        this.specificOccurrence = results.get("specificOccurrence");
-        this.specificOccurrenceConst = results.get("specificOccurrenceConst");
+        if (results == null) {
+            this.sourceDataCriteria = null;
+            this.sourceDataCriteriaRoot = null;
+            this.sourceDataCriteriaExtension = null;
+            this.specificOccurrence = false;
+            this.specificOccurrenceConst = null;
+        }
+        else {
+            this.sourceDataCriteria = results.get("sourceDataCriteria");
+            this.sourceDataCriteriaRoot = results.get("sourceDataCriteriaRoot");
+            this.sourceDataCriteriaExtension = results.get("sourceDataCriteriaExtension");
+            this.specificOccurrence = (results.get("specificOccurrence") != null && results.get("specificOccurrence").equals("true"));
+            this.specificOccurrenceConst = results.get("specificOccurrenceConst");
+        }
 
-        DataCriteriaTypeAndDefinitionExtraction.extractDefinitionFromTemplateOrType(this.templateIds);
-        postProcessing();
+        DataCriteriaTypeAndDefinitionExtraction.extractDefinitionFromTemplateOrType(this);
+        DataCriteriaPostProcessing.postProcessing(this);
     }
 
     // Handles elments that can be extracted directly from the xml. Utilises the "BaseExtractions" class.
@@ -182,14 +193,16 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
     }
 
     // Parses the value for a given xpath
-    private static Object parseValue(Node node, XPath xPath, String xpathLocation) throws Exception {
+    public static Object parseValue(Node node, XPath xPath, String xpathLocation) throws Exception {
         Node valueDef = (Node)xPath.evaluate(xpathLocation, node, XPathConstants.NODE);
         if (valueDef != null) {
             if ("ANY.NONNULL" == (String)xPath.evaluate("@flavorId", valueDef, XPathConstants.STRING)) {
                 return new AnyValue();
             }
-            Node valueTypeDef = (Node)xPath.evaluate("@xsi:type", valueDef, XPathConstants.NODE);
-            return handleValueType(valueTypeDef, valueDef);
+            Node valueTypeDef = (Node)xPath.evaluate("@type", valueDef, XPathConstants.NODE);
+            if (valueTypeDef != null) {
+                return handleValueType(valueTypeDef, valueDef);
+            }
         }
         return null;
     }
@@ -240,5 +253,308 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
         }
 
         return "";
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getOriginalId() {
+        return originalId;
+    }
+
+    public void setOriginalId(String originalId) {
+        this.originalId = originalId;
+    }
+
+    public String getProperty() {
+        return property;
+    }
+
+    public void setProperty(String property) {
+        this.property = property;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public void setValue(Object value) {
+        this.value = value;
+    }
+
+    public String getEffectiveTime() {
+        return effectiveTime;
+    }
+
+    public void setEffectiveTime(String effectiveTime) {
+        this.effectiveTime = effectiveTime;
+    }
+
+    public String getSection() {
+        return section;
+    }
+
+    public void setSection(String section) {
+        this.section = section;
+    }
+
+    public String getDerivationOperator() {
+        return derivationOperator;
+    }
+
+    public void setDerivationOperator(String derivationOperator) {
+        this.derivationOperator = derivationOperator;
+    }
+
+    public boolean isNegation() {
+        return negation;
+    }
+
+    public void setNegation(boolean negation) {
+        this.negation = negation;
+    }
+
+    public String getNegationCodeListId() {
+        return negationCodeListId;
+    }
+
+    public void setNegationCodeListId(String negationCodeListId) {
+        this.negationCodeListId = negationCodeListId;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public HashMap<String, Object> getFieldValues() {
+        return fieldValues;
+    }
+
+    public void setFieldValues(HashMap<String, Object> fieldValues) {
+        this.fieldValues = fieldValues;
+    }
+
+    public String getSourceDataCriteria() {
+        return sourceDataCriteria;
+    }
+
+    public void setSourceDataCriteria(String sourceDataCriteria) {
+        this.sourceDataCriteria = sourceDataCriteria;
+    }
+
+    public String getSourceDataCriteriaRoot() {
+        return sourceDataCriteriaRoot;
+    }
+
+    public void setSourceDataCriteriaRoot(String sourceDataCriteriaRoot) {
+        this.sourceDataCriteriaRoot = sourceDataCriteriaRoot;
+    }
+
+    public String getSpecificOccurrenceConst() {
+        return specificOccurrenceConst;
+    }
+
+    public void setSpecificOccurrenceConst(String specificOccurrenceConst) {
+        this.specificOccurrenceConst = specificOccurrenceConst;
+    }
+
+    public String getSourceDataCriteriaExtension() {
+        return sourceDataCriteriaExtension;
+    }
+
+    public void setSourceDataCriteriaExtension(String sourceDataCriteriaExtension) {
+        this.sourceDataCriteriaExtension = sourceDataCriteriaExtension;
+    }
+
+    public boolean isSpecificOccurrence() {
+        return specificOccurrence;
+    }
+
+    public void setSpecificOccurrence(boolean specificOccurrence) {
+        this.specificOccurrence = specificOccurrence;
+    }
+
+    public ArrayList<String> getComments() {
+        return comments;
+    }
+
+    public void setComments(ArrayList<String> comments) {
+        this.comments = comments;
+    }
+
+    public boolean isDerivedSpecificOccurrenceVariable() {
+        return isDerivedSpecificOccurrenceVariable;
+    }
+
+    public void setDerivedSpecificOccurrenceVariable(boolean derivedSpecificOccurrenceVariable) {
+        isDerivedSpecificOccurrenceVariable = derivedSpecificOccurrenceVariable;
+    }
+
+    public String getDefinition() {
+        return definition;
+    }
+
+    public void setDefinition(String definition) {
+        this.definition = definition;
+    }
+
+    public boolean isVariable() {
+        return variable;
+    }
+
+    public void setVariable(boolean variable) {
+        this.variable = variable;
+    }
+
+    public String getLocalVariableName() {
+        return localVariableName;
+    }
+
+    public void setLocalVariableName(String localVariableName) {
+        this.localVariableName = localVariableName;
+    }
+
+    public Node getEntry() {
+        return entry;
+    }
+
+    public void setEntry(Node entry) {
+        this.entry = entry;
+    }
+
+    public XPath getxPath() {
+        return xPath;
+    }
+
+    public void setxPath(XPath xPath) {
+        this.xPath = xPath;
+    }
+
+    public HashMap<String, DataCriteria> getDataCriteriaReferences() {
+        return dataCriteriaReferences;
+    }
+
+    public void setDataCriteriaReferences(HashMap<String, DataCriteria> dataCriteriaReferences) {
+        this.dataCriteriaReferences = dataCriteriaReferences;
+    }
+
+    public HashMap<String, String> getOccurrencesMap() {
+        return occurrencesMap;
+    }
+
+    public void setOccurrencesMap(HashMap<String, String> occurrencesMap) {
+        this.occurrencesMap = occurrencesMap;
+    }
+
+    public ArrayList<String> getTemplateIds() {
+        return templateIds;
+    }
+
+    public void setTemplateIds(ArrayList<String> templateIds) {
+        this.templateIds = templateIds;
+    }
+
+    public ArrayList<TemporalReference> getTemporalReferences() {
+        return temporalReferences;
+    }
+
+    public void setTemporalReferences(ArrayList<TemporalReference> temporalReferences) {
+        this.temporalReferences = temporalReferences;
+    }
+
+    public ArrayList<String> getChildrenCriteria() {
+        return childrenCriteria;
+    }
+
+    public void setChildrenCriteria(ArrayList<String> childrenCriteria) {
+        this.childrenCriteria = childrenCriteria;
+    }
+
+    public ArrayList<SubsetOperator> getSubsetOperators() {
+        return subsetOperators;
+    }
+
+    public void setSubsetOperators(ArrayList<SubsetOperator> subsetOperators) {
+        this.subsetOperators = subsetOperators;
+    }
+
+    public String getCodeListXPath() {
+        return codeListXPath;
+    }
+
+    public void setCodeListXPath(String codeListXPath) {
+        this.codeListXPath = codeListXPath;
+    }
+
+    public String getValueXPath() {
+        return valueXPath;
+    }
+
+    public void setValueXPath(String valueXPath) {
+        this.valueXPath = valueXPath;
+    }
+
+    public static Pattern getVariableNamePattern() {
+        return variableNamePattern;
+    }
+
+    public static void setVariableNamePattern(Pattern variableNamePattern) {
+        DataCriteria.variableNamePattern = variableNamePattern;
+    }
+
+    public static Pattern getQdmVariablePattern() {
+        return qdmVariablePattern;
+    }
+
+    public static void setQdmVariablePattern(Pattern qdmVariablePattern) {
+        DataCriteria.qdmVariablePattern = qdmVariablePattern;
+    }
+
+    public static Pattern getLocalVariablePattern() {
+        return localVariablePattern;
+    }
+
+    public static void setLocalVariablePattern(Pattern localVariablePattern) {
+        DataCriteria.localVariablePattern = localVariablePattern;
+    }
+
+    public String getCodeListId() {
+        if (codeListId == null || codeListId.length() == 0) {
+            try {
+                return XmlHelpers.getAttributeValue((Element)entry, xPath, String.format("%s/@valueSet", codeListXPath), "");
+            } catch (XPathExpressionException e) {
+                e.printStackTrace();
+                return codeListId;
+            }
+        }
+        return codeListId;
+    }
+    public void setCodeListId(String codeListId) {
+        this.codeListId = codeListId;
     }
 }

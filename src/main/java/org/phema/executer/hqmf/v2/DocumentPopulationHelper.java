@@ -43,15 +43,29 @@ public class DocumentPopulationHelper {
     private void removePopulationPreconditions(Node doc) throws XPathExpressionException {
         XPath xPath = XmlHelpers.createXPath(doc.getOwnerDocument());
         // population sections
-        NodeList popIds = (NodeList)xPath.evaluate("//populationCriteriaSection/component[@typeCode='COMP']/*/id", doc, XPathConstants.NODESET);
+        NodeList popIds = (NodeList)xPath.evaluate("//cda:populationCriteriaSection/cda:component[@typeCode='COMP']/*/cda:id", doc, XPathConstants.NODESET);
         // find the population entries and get their ids
         for (int index = 0; index < popIds.getLength(); index++) {
             Node popId = popIds.item(index);
-            Node node = (Node)xPath.evaluate(String.format("//precondition[./criteriaReference/id[@extension='%s' and @root='%s']]",
+            Node node = (Node)xPath.evaluate(String.format("//cda:precondition[./cda:criteriaReference/cda:id[@extension='%s' and @root='%s']]",
                     popId.getAttributes().getNamedItem("extension"), popId.getAttributes().getNamedItem("root")), doc, XPathConstants.NODE);
             if (node != null) {
                 node.getParentNode().removeChild(node);
             }
         }
+    }
+
+    // Returns the population descriptions and criteria found in this document
+    public Object[] extractPopulationsAndCriteria() {
+        boolean hasObservation = extractObservations();
+
+        return null;
+    }
+
+    // Extracts the measure observations, will return true if one exists
+    private boolean extractObservations() {
+        boolean hasObservations = false;
+
+        return hasObservations;
     }
 }

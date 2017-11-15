@@ -55,7 +55,7 @@ public class DataCriteriaPostProcessing {
         ArrayList<String> templateIds = criteria.getTemplateIds();
         if ((templateIds == null || templateIds.size() == 0) && criteria.isSpecificOccurrence()) {
             String template = XmlHelpers.getAttributeValue(criteria.getEntry(), criteria.getxPath(),
-                    String.format("//id[@root='%s' and @extension='%s']/../templateId/item/@root",
+                    String.format("//cda:id[@root='%s' and @extension='%s']/../cda:templateId/cda:item/@root",
                             criteria.getSourceDataCriteriaRoot(), criteria.getSourceDataCriteriaExtension()),
                     "");
             if (template.length() > 0) {

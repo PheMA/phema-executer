@@ -106,8 +106,8 @@ public class DataCriteriaTypeAndDefinitionExtraction {
 
         String refId = Utilities.stripTokens(
                 String.format("%s_%s",
-                        XmlHelpers.getAttributeValue(reference, xPath, "id/@extension", ""),
-                        XmlHelpers.getAttributeValue(reference, xPath, "id/@root", "")));
+                        XmlHelpers.getAttributeValue(reference, xPath, "cda:id/@extension", ""),
+                        XmlHelpers.getAttributeValue(reference, xPath, "cda:id/@root", "")));
         if (refId == null || refId.length() == 0) {
             return;
         }

@@ -27,9 +27,9 @@ import java.io.StringWriter;
  * Created by Luke Rasmussen on 7/25/17.
  */
 public class XmlHelpers {
-    public static Document loadXMLFromString(String xml) throws Exception
-    {
+    public static Document loadXMLFromString(String xml) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
         DocumentBuilder builder = factory.newDocumentBuilder();
         InputSource is = new InputSource(new StringReader(xml));
         return builder.parse(is);
@@ -66,13 +66,13 @@ public class XmlHelpers {
 
     public static XPath createXPath(Document document) {
         XPath documentXPath = XPathFactory.newInstance().newXPath();
-        NamespaceContext context = new UniversalNamespaceCache(document, true);
+        NamespaceContext context = new UniversalNamespaceCache(document, true, "cda");
         documentXPath.setNamespaceContext(context);
         return documentXPath;
     }
 
     public static String getAttributeValue(Element element, XPath documentXPath, String xpath, String defaultValue) throws XPathExpressionException {
-        String value = (String)documentXPath.evaluate(xpath, element, XPathConstants.STRING);
+        String value = (String)documentXPath.compile(xpath).evaluate(element, XPathConstants.STRING);
         if (value.length() == 0) {
             return defaultValue;
         }

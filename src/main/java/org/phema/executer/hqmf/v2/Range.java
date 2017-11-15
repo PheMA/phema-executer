@@ -35,8 +35,8 @@ public class Range {
             this.type = XmlHelpers.getAttributeValue((Element) this.entry, xPath, "./@type", "");
         }
         String defaultName = defaultElementName();
-        this.low = optionalValue(xPath, defaultName + "/low", defaultBoundsType());
-        this.high = optionalValue(xPath, defaultName + "/high", defaultBoundsType());
+        this.low = optionalValue(xPath, defaultName + "/cda:low", defaultBoundsType());
+        this.high = optionalValue(xPath, defaultName + "/cda:high", defaultBoundsType());
         // Unset low bound to resolve verbose value bounds descriptions
         if (this.high != null && this.high instanceof Value && this.low != null && this.low instanceof Value) {
             Integer highValue = ConversionHelpers.tryIntParse(((Value) this.high).getValue());
@@ -45,7 +45,7 @@ public class Range {
                 this.low = null;
             }
         }
-        this.width = optionalValue(xPath, defaultName + "/width", "PQ");
+        this.width = optionalValue(xPath, defaultName + "/cda:width", "PQ");
     }
 
     public Object getLow() {

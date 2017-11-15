@@ -31,7 +31,7 @@ public class DataCriteriaBaseExtractions {
 
     public ArrayList<String> extractTemplateIds() throws XPathExpressionException {
         ArrayList<String> templateIds = new ArrayList<String>();
-        NodeList items = (NodeList)xPath.evaluate("./*/templateId/item", this.entry, XPathConstants.NODESET);
+        NodeList items = (NodeList)xPath.evaluate("./*/cda:templateId/cda:item", this.entry, XPathConstants.NODESET);
         for (int index = 0; index < items.getLength(); index++) {
             Node item = items.item(index);
             templateIds.add(item.getAttributes().getNamedItem("root").getNodeValue());
@@ -42,7 +42,7 @@ public class DataCriteriaBaseExtractions {
     // Extracts the derivation operator to be used by the data criteria, and fails out if it finds more than one (should
     // not be valid)
     public String extractDerivationOperator() throws Exception {
-        NodeList codes = (NodeList)this.xPath.evaluate("./*/outboundRelationship[@typeCode='COMP']/conjunctionCode[@code]", this.entry, XPathConstants.NODESET);
+        NodeList codes = (NodeList)this.xPath.evaluate("./*/cda:outboundRelationship[@typeCode='COMP']/cda:conjunctionCode[@code]", this.entry, XPathConstants.NODESET);
         if (codes != null) {
             String dOp = null;
             for (int index = 0; index < codes.getLength(); index++) {
@@ -66,7 +66,7 @@ public class DataCriteriaBaseExtractions {
 
     public ArrayList<TemporalReference> extractTemporalReferences() throws XPathExpressionException {
         ArrayList<TemporalReference> references = new ArrayList<TemporalReference>();
-        NodeList referenceNodes = (NodeList)this.xPath.evaluate("./*/temporallyRelatedInformation", this.entry, XPathConstants.NODESET);
+        NodeList referenceNodes = (NodeList)this.xPath.evaluate("./*/cda:temporallyRelatedInformation", this.entry, XPathConstants.NODESET);
         for (int index = 0; index < referenceNodes.getLength(); index++) {
             Node referenceNode = referenceNodes.item(index);
             references.add(new TemporalReference(referenceNode));
@@ -77,7 +77,7 @@ public class DataCriteriaBaseExtractions {
     // Generate a list of child criteria
     public ArrayList<String> extractChildCriteria() throws XPathExpressionException {
         ArrayList<String> criteria = new ArrayList<String>();
-        NodeList nodes = (NodeList)this.xPath.evaluate("./*/outboundRelationship[@typeCode='COMP']/criteriaReference/id", this.entry, XPathConstants.NODESET);
+        NodeList nodes = (NodeList)this.xPath.evaluate("./*/cda:outboundRelationship[@typeCode='COMP']/cda:criteriaReference/cda:id", this.entry, XPathConstants.NODESET);
         for (int index = 0; index < nodes.getLength(); index++) {
             Reference ref = new Reference(nodes.item(index));
             if (ref != null && ref.getId() != null) {
@@ -104,7 +104,7 @@ public class DataCriteriaBaseExtractions {
     // Extracts all subset operators contained in the entry xml
     public ArrayList<SubsetOperator> allSubsetOperators() throws XPathExpressionException {
         ArrayList<SubsetOperator> operators = new ArrayList<SubsetOperator>();
-        NodeList operatorNodes = (NodeList)xPath.evaluate("./*/excerpt", this.entry, XPathConstants.NODESET);
+        NodeList operatorNodes = (NodeList)xPath.evaluate("./*/cda:excerpt", this.entry, XPathConstants.NODESET);
         for (int index = 0; index < operatorNodes.getLength(); index++) {
             operators.add(new SubsetOperator(operatorNodes.item(index)));
         }
@@ -120,7 +120,7 @@ public class DataCriteriaBaseExtractions {
     // Extract the negation code list ID (if appropriate)
     public String extractNegationCodeListId(boolean negation) throws XPathExpressionException {
         if (negation) {
-            Node code = (Node)xPath.evaluate("./*/outboundRelationship/*/code[@code=\"410666004\"]/../value/@valueSet", this.entry, XPathConstants.NODE);
+            Node code = (Node)xPath.evaluate("./*/cda:outboundRelationship/*/cda:code[@code=\"410666004\"]/../cda:value/@valueSet", this.entry, XPathConstants.NODE);
             if (code != null) {
                 return code.getNodeValue();
             }

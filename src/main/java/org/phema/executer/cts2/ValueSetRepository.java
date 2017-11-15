@@ -54,7 +54,7 @@ public class ValueSetRepository implements IValueSetRepository {
             }
 
             XPath xPath = XPathFactory.newInstance().newXPath();
-            NamespaceContext context = new UniversalNamespaceCache(result, true);
+            NamespaceContext context = new UniversalNamespaceCache(result, true, "cda");
             xPath.setNamespaceContext(context);
             NodeList entries = (NodeList)xPath.evaluate("//entry", result.getDocumentElement(), XPathConstants.NODESET);
 
@@ -82,7 +82,7 @@ public class ValueSetRepository implements IValueSetRepository {
             }
 
             XPath xPath = XPathFactory.newInstance().newXPath();
-            NamespaceContext context = new UniversalNamespaceCache(result, true);
+            NamespaceContext context = new UniversalNamespaceCache(result, true, "cda");
             xPath.setNamespaceContext(context);
 
             // For now we're just checking if the particular node exists - if not, we assume it's "not found" and move on.

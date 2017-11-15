@@ -1,16 +1,9 @@
 package org.phema.executer;
 
-//import com.javapda.hqmf.QualityMeasureDocument;
-//import com.javapda.hqmf.QualityMeasureDocumentFactory;
 import org.apache.commons.io.FileUtils;
-import org.phema.executer.cts2.models.ValueSet;
 import org.phema.executer.hqmf.IDocument;
 import org.phema.executer.hqmf.Parser;
-import org.phema.executer.hqmf.models.HqmfTemplateHelper;
-
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  * Created by Luke Rasmussen on 7/19/17.
@@ -47,6 +40,7 @@ public class CLITest {
 //        File xmlFile = new File("tests/resources/xmlfiles/CMS_146_HQMF_R2.xml");
 //        File xmlFile = new File("/Users/lvr491/Development/MSPCTRA/H3/EP_CMS138v4_NQF0028_PREV_Tobacco/CMS138v4.xml");
         File xmlFile = new File("tests/resources/xmlfiles/phema-bph-use-case.xml");
+//        File xmlFile = new File("/Users/lvr491/Documents/HL7Standards/HQMF/HQMFr2_1 2/EH/CMS73v3_R2.xml");
         String hqmf = null;
         try {
             hqmf = FileUtils.readFileToString(xmlFile);

@@ -13,7 +13,8 @@ import java.util.Map;
  * Code from: https://www.ibm.com/developerworks/library/x-nmspccontext/index.html
  */
 public class UniversalNamespaceCache implements NamespaceContext {
-    private static final String DEFAULT_NS = "DEFAULT";
+    //private static final String DEFAULT_NS = "DEFAULT";
+    private String defaultNamespace = "DEFAULT";
     private Map<String, String> prefix2Uri = new HashMap<String, String>();
     private Map<String, String> uri2Prefix = new HashMap<String, String>();
 
@@ -26,12 +27,13 @@ public class UniversalNamespaceCache implements NamespaceContext {
      * @param toplevelOnly
      *            restriction of the search to enhance performance
      */
-    public UniversalNamespaceCache(Document document, boolean toplevelOnly) {
+    public UniversalNamespaceCache(Document document, boolean toplevelOnly, String defaultNamespace) {
+        this.defaultNamespace = defaultNamespace;
         examineNode(document.getDocumentElement(), toplevelOnly);
-        System.out.println("The list of the cached namespaces:");
-        for (String key : prefix2Uri.keySet()) {
-            System.out.println("prefix " + key + ": uri " + prefix2Uri.get(key));
-        }
+//        System.out.println("The list of the cached namespaces:");
+//        for (String key : prefix2Uri.keySet()) {
+//            System.out.println("prefix " + key + ": uri " + prefix2Uri.get(key));
+//        }
     }
 
     /**
@@ -73,7 +75,7 @@ public class UniversalNamespaceCache implements NamespaceContext {
                 && attribute.getNodeName().startsWith(XMLConstants.XMLNS_ATTRIBUTE)) {
             // Default namespace xmlns="uri goes here"
             if (attribute.getNodeName().equals(XMLConstants.XMLNS_ATTRIBUTE)) {
-                putInCache(DEFAULT_NS, attribute.getNodeValue());
+                putInCache(this.defaultNamespace, attribute.getNodeValue());
             } else {
                 // The defined prefixes are stored here
                 putInCache(attribute.getNodeName().replace(XMLConstants.XMLNS_ATTRIBUTE + ":", ""), attribute.getNodeValue());
@@ -97,7 +99,7 @@ public class UniversalNamespaceCache implements NamespaceContext {
      */
     public String getNamespaceURI(String prefix) {
         if (prefix == null || prefix.equals(XMLConstants.DEFAULT_NS_PREFIX)) {
-            return prefix2Uri.get(DEFAULT_NS);
+            return prefix2Uri.get(this.defaultNamespace);
         } else {
             return prefix2Uri.get(prefix);
         }

@@ -32,10 +32,9 @@ public class SubsetOperator {
         this.entry = entry;
 
         XPath xPath = XmlHelpers.createXPath(this.entry.getOwnerDocument());
-        String sequenceNumber = XmlHelpers.getAttributeValue(this.entry, xPath, "./sequenceNumber/@value", "");
-        //FIXME: this is supposed to be prefixed with qdm (qdm:subsetCode) but we don't have qdm namespace available
-        String qdmSubsetCode = XmlHelpers.getAttributeValue(this.entry, xPath, "./subsetCode/@code", "");
-        String subsetCode = XmlHelpers.getAttributeValue(this.entry, xPath, "./subsetCode/@code", "");
+        String sequenceNumber = XmlHelpers.getAttributeValue(this.entry, xPath, "./cda:sequenceNumber/@value", "");
+        String qdmSubsetCode = XmlHelpers.getAttributeValue(this.entry, xPath, "./qdm:subsetCode/@code", "");
+        String subsetCode = XmlHelpers.getAttributeValue(this.entry, xPath, "./cda:subsetCode/@code", "");
         if (sequenceNumber.length() > 0) {
             this.type = ORDER_SUBSETS[Integer.parseInt(sequenceNumber) - 1];
         }
@@ -68,19 +67,19 @@ public class SubsetOperator {
     // Return the value definition (what to calculate it on) associated with this subset.
     // Other values, such as type and value, may be modified depending on this value.
     private Node handleValueDefinition(XPath xPath) throws XPathExpressionException {
-        Node valueDef = (Node)xPath.evaluate("./*/repeatNumber", this.entry, XPathConstants.NODE);
+        Node valueDef = (Node)xPath.evaluate("./*/cda:repeatNumber", this.entry, XPathConstants.NODE);
         if (valueDef == null) {
             // TODO: HQMF needs better differentiation between SUM & COUNT...
             // currently using presence of repeatNumber...
             if (this.type.equals("COUNT")) {
                 this.type = "SUM";
             }
-            valueDef = (Node)xPath.evaluate("./*/value", this.entry, XPathConstants.NODE);
+            valueDef = (Node)xPath.evaluate("./*/cda:value", this.entry, XPathConstants.NODE);
         }
 
         // TODO: Resolve extracting values embedded in criteria within outboundRel's
         if (this.type.equals("SUM")) {
-            valueDef = (Node)xPath.evaluate("./*/*/*/value", this.entry, XPathConstants.NODE);
+            valueDef = (Node)xPath.evaluate("./*/*/*/cda:value", this.entry, XPathConstants.NODE);
         }
 
         if (valueDef != null) {

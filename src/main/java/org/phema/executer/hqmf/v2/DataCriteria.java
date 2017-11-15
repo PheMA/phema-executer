@@ -100,20 +100,20 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
     private void basicSetup() throws Exception {
         Element element = (Element)this.entry;
         XPath xPath = XmlHelpers.createXPath(this.entry.getOwnerDocument());
-        this.status = XmlHelpers.getAttributeValue(element, xPath, "./*/statusCode/@code", "");
+        this.status = XmlHelpers.getAttributeValue(element, xPath, "./*/cda:statusCode/@code", "");
         this.id = String.format("%s_%s",
-                XmlHelpers.getAttributeValue(element, xPath, "./*/id/@extension", ""),
-                XmlHelpers.getAttributeValue(element, xPath, "./*/id/@root", ""));
+                XmlHelpers.getAttributeValue(element, xPath, "./*/cda:id/@extension", ""),
+                XmlHelpers.getAttributeValue(element, xPath, "./*/cda:id/@root", ""));
 
         this.comments = new ArrayList<String>();
-        NodeList commentNodes = (NodeList)xPath.evaluate(String.format("./%s/text/xml/qdmUserComments/item/text()", CRITERIA_GLOB),
+        NodeList commentNodes = (NodeList)xPath.evaluate(String.format("./%s/cda:text/cda:xml/cda:qdmUserComments/cda:item/text()", CRITERIA_GLOB),
                 element, XPathConstants.NODESET);
         for (int index = 0; index < commentNodes.getLength(); index++) {
             Node comment = commentNodes.item(index);
             this.comments.add(comment.getTextContent());
         }
-        this.codeListXPath = "./*/code";
-        this.valueXPath = "./*/value";
+        this.codeListXPath = "./*/cda:code";
+        this.valueXPath = "./*/cda:value";
         this.isDerivedSpecificOccurrenceVariable = false;
 
         DataCriteriaBaseExtractions simpleExtractions = new DataCriteriaBaseExtractions(this.entry);
@@ -129,7 +129,7 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
 
     private String extractDescription() throws XPathExpressionException {
         if (this.variable) {
-            String encodedName = XmlHelpers.getAttributeValue(this.entry, this.xPath, "./localVariableName/@value", "");
+            String encodedName = XmlHelpers.getAttributeValue(this.entry, this.xPath, "./cda:localVariableName/@value", "");
             if (encodedName != null && encodedName.length() > 0) {
                 encodedName = extractDescriptionForVariable(encodedName);
                 if (encodedName != null && encodedName.length() > 0) {
@@ -138,18 +138,18 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
             }
         }
         else {
-            String value = XmlHelpers.getAttributeValue(this.entry, this.xPath, String.format("./%s/text/@value", CRITERIA_GLOB), "");
+            String value = XmlHelpers.getAttributeValue(this.entry, this.xPath, String.format("./%s/cda:text/@value", CRITERIA_GLOB), "");
             if (value.length() > 0) {
                 return value;
             }
 
-            value = XmlHelpers.getAttributeValue(this.entry, this.xPath, String.format("./%s/title/@value", CRITERIA_GLOB), "");
+            value = XmlHelpers.getAttributeValue(this.entry, this.xPath, String.format("./%s/cda:title/@value", CRITERIA_GLOB), "");
             if (value.length() > 0) {
                 return value;
             }
         }
 
-        return XmlHelpers.getAttributeValue(this.entry, this.xPath, String.format("./%s/id/@extension", CRITERIA_GLOB), "");
+        return XmlHelpers.getAttributeValue(this.entry, this.xPath, String.format("./%s/cda:id/@extension", CRITERIA_GLOB), "");
     }
 
 
@@ -161,18 +161,18 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
         HashMap<String, Object> fields = new HashMap<String, Object>();
         XPath xPath = XmlHelpers.createXPath(entry.getOwnerDocument());
         // extract most fields which use the same structure
-        NodeList fieldNodes = (NodeList)xPath.evaluate("outboundRelationship[*/code]", entry, XPathConstants.NODESET);
+        NodeList fieldNodes = (NodeList)xPath.evaluate("cda:outboundRelationship[*/cda:code]", entry, XPathConstants.NODESET);
         for (int index = 0; index < fieldNodes.getLength(); index++) {
             Node field = fieldNodes.item(index);
-            String code = XmlHelpers.getAttributeValue((Element)field, xPath, "./*/code/@code", "");
+            String code = XmlHelpers.getAttributeValue((Element)field, xPath, "./*/cda:code/@code", "");
             String codeId = VALUE_FIELDS.get(code);
             // No need to run if there is no code id
             if ((negation && codeId.equals("REASON")) || codeId == null) {
                 continue;
             }
-            Object value = parseValue(field, xPath, "./*/value");
+            Object value = parseValue(field, xPath, "./*/cda:value");
             if (value == null) {
-                value = parseValue(field, xPath, "./*/effectiveTime");
+                value = parseValue(field, xPath, "./*/cda:effectiveTime");
             }
             fields.put(codeId, value);
         }

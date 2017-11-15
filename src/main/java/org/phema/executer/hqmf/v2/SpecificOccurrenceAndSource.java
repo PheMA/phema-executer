@@ -39,17 +39,17 @@ public class SpecificOccurrenceAndSource {
 
     // Retrieve the specific occurrence and source data criteria information (or just source if there is no specific)
     public HashMap<String, String> extractSpecificOccurrencesAndSourceDataCriteria() throws Exception {
-        Node specificDef = (Node)xPath.evaluate("./*/outboundRelationship[@typeCode=\"OCCR\"]", this.entry, XPathConstants.NODE);
-        Node sourceDef = (Node)xPath.evaluate("./*/outboundRelationship[subsetCode/@code=\"SOURCE\"]", this.entry, XPathConstants.NODE);
+        Node specificDef = (Node)xPath.evaluate("./*/cda:outboundRelationship[@typeCode=\"OCCR\"]", this.entry, XPathConstants.NODE);
+        Node sourceDef = (Node)xPath.evaluate("./*/cda:outboundRelationship[cda:subsetCode/@code=\"SOURCE\"]", this.entry, XPathConstants.NODE);
         if (specificDef != null) {
-            String sourceDataCriteriaExtension = XmlHelpers.getAttributeValue(specificDef, this.xPath, "./criteriaReference/id/@extension", "");
-            String sourceDataCriteriaRoot = XmlHelpers.getAttributeValue(specificDef, this.xPath, "./criteriaReference/id/@root", "");
+            String sourceDataCriteriaExtension = XmlHelpers.getAttributeValue(specificDef, this.xPath, "./cda:criteriaReference/cda:id/@extension", "");
+            String sourceDataCriteriaRoot = XmlHelpers.getAttributeValue(specificDef, this.xPath, "./cda:criteriaReference/cda:id/@root", "");
             Object occurrenceCriteria = this.dataCriteriaReferences.get(Utilities.stripTokens(String.format("%s_%s", sourceDataCriteriaExtension, sourceDataCriteriaRoot)));
             if (occurrenceCriteria == null) {
                 return null;
             }
-            String specificOccurrenceConst = XmlHelpers.getAttributeValue(specificDef, this.xPath, "./localVariableName/@controlInformationRoot", "");
-            String specificOccurrence = XmlHelpers.getAttributeValue(specificDef, this.xPath, "./localVariableName/@controlInformationExtension", "");
+            String specificOccurrenceConst = XmlHelpers.getAttributeValue(specificDef, this.xPath, "./cda:localVariableName/@controlInformationRoot", "");
+            String specificOccurrence = XmlHelpers.getAttributeValue(specificDef, this.xPath, "./cda:localVariableName/@controlInformationExtension", "");
 
             // FIXME: Remove debug statements after cleaning up occurrence handling
             // build regex for extracting alpha-index of specific occurrences
@@ -62,8 +62,8 @@ public class SpecificOccurrenceAndSource {
                     specificOccurrenceConst, specificOccurrence);
         }
         else if (sourceDef != null) {
-            String extension = XmlHelpers.getAttributeValue(sourceDef, this.xPath, "./criteriaReference/id/@extension", "");
-            String root = XmlHelpers.getAttributeValue(sourceDef, this.xPath, "./criteriaReference/id/@root", "");
+            String extension = XmlHelpers.getAttributeValue(sourceDef, this.xPath, "./cda:criteriaReference/cda:id/@extension", "");
+            String root = XmlHelpers.getAttributeValue(sourceDef, this.xPath, "./cda:criteriaReference/cda:id/@root", "");
             // Return the source data criteria itself, the rest will be blank
             return new HashMap<String, String>() {{
                 put("sourceDataCriteria", String.format("%s_%s_source", extension, root));

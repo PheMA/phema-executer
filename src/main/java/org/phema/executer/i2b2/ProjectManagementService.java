@@ -32,7 +32,7 @@ public class ProjectManagementService extends I2b2ServiceBase {
 
         Document result = httpHelper.PostXml(new URI(configuration.getI2b2ProjectManagementUrl().toString() + "getServices"), document);
         XPath xPath = XPathFactory.newInstance().newXPath();
-        NamespaceContext context = new UniversalNamespaceCache(result, true);
+        NamespaceContext context = new UniversalNamespaceCache(result, true, "cda");
         xPath.setNamespaceContext(context);
         Node status = (Node)xPath.evaluate("//response_header/result_status/status", result.getDocumentElement(), XPathConstants.NODE);
         Node token = (Node)xPath.evaluate("//message_body/configure/user/password", result.getDocumentElement(), XPathConstants.NODE);

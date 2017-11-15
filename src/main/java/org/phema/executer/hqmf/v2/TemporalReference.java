@@ -28,8 +28,8 @@ public class TemporalReference {
         else {
             this.type = typeAttrValue;
         }
-        this.reference = new Reference((Node)xPath.evaluate("./*/id", this.entry, XPathConstants.NODE));
-        Node rangeDef = (Node)xPath.evaluate("./temporalInformation/delta", this.entry, XPathConstants.NODE);
+        this.reference = new Reference((Node)xPath.evaluate("./*/cda:id", this.entry, XPathConstants.NODE));
+        Node rangeDef = (Node)xPath.evaluate("./cda:temporalInformation/cda:delta", this.entry, XPathConstants.NODE);
         if (rangeDef != null) {
             this.range = new Range(rangeDef, "IVL_PQ");
         }

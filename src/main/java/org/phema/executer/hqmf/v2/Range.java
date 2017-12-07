@@ -48,6 +48,13 @@ public class Range {
         this.width = optionalValue(xPath, defaultName + "/cda:width", "PQ");
     }
 
+    public Range(String type, Value low, Value high, Value width) {
+        this.type = type;
+        this.low = low;
+        this.high = high;
+        this.width = width;
+    }
+
     public Object getLow() {
         return low;
     }

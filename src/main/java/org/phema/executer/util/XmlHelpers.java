@@ -22,6 +22,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.ArrayList;
 
 /**
  * Created by Luke Rasmussen on 7/25/17.
@@ -81,6 +82,26 @@ public class XmlHelpers {
 
     public static String getAttributeValue(Node node, XPath documentXPath, String xpath, String defaultValue) throws XPathExpressionException {
         return getAttributeValue((Element)node, documentXPath, xpath, defaultValue);
+    }
+
+    public static String getNodeText(Node node, XPath documentXPath, String xpath, String defaultValue) throws XPathExpressionException {
+        Node textNode = ((Node)documentXPath.evaluate(xpath, node, XPathConstants.NODE));
+        if (textNode == null) {
+            return defaultValue;
+        }
+
+        return textNode.getTextContent();
+    }
+
+    // Derived from http://www.java2s.com/Code/Java/XML/ConvertNodeListToNodeArray.htm
+    public static ArrayList<Node> convertNodeListToArray(NodeList list) {
+        int length = list.getLength();
+        ArrayList<Node> array = new ArrayList<Node>(length);
+        for (int index = 0; index < length; index++) {
+            array.add(list.item(index));
+        }
+
+        return array;
     }
 
 //    public static String getAttributeValue(Element element, String xpath) throws XPathExpressionException {

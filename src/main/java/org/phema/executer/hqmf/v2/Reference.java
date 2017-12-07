@@ -18,6 +18,10 @@ public class Reference {
 
     private String id;
 
+    public Reference(String id) {
+        this.id = id;
+    }
+
     public Reference(Node entry) throws XPathExpressionException {
         this.entry = entry;
         XPath xPath = XmlHelpers.createXPath(entry.getOwnerDocument());

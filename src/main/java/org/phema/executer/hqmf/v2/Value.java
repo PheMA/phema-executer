@@ -73,4 +73,12 @@ public class Value {
     public void setValue(String value) {
         this.value = value;
     }
+
+    public boolean isForceInclusive() {
+        return forceInclusive;
+    }
+
+    public void setForceInclusive(boolean forceInclusive) {
+        this.forceInclusive = forceInclusive;
+    }
 }

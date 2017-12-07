@@ -24,6 +24,7 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
     private String property;
     private String type;
     private String status;
+    private String title;
     private Object value;
     private String effectiveTime;
     private String section;
@@ -94,6 +95,9 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
 
         DataCriteriaTypeAndDefinitionExtraction.extractDefinitionFromTemplateOrType(this);
         DataCriteriaPostProcessing.postProcessing(this);
+    }
+
+    public DataCriteria() {
     }
 
     // Handles elments that can be extracted directly from the xml. Utilises the "BaseExtractions" class.
@@ -556,5 +560,13 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
     }
     public void setCodeListId(String codeListId) {
         this.codeListId = codeListId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 }

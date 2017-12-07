@@ -39,8 +39,8 @@ public class CLITest {
 //        File xmlFile = new File("tests/resources/xmlfiles/PhEMA-T2DM-Simple.xml");
 //        File xmlFile = new File("tests/resources/xmlfiles/CMS_146_HQMF_R2.xml");
 //        File xmlFile = new File("/Users/lvr491/Development/MSPCTRA/H3/EP_CMS138v4_NQF0028_PREV_Tobacco/CMS138v4.xml");
-        File xmlFile = new File("tests/resources/xmlfiles/phema-bph-use-case.xml");
-//        File xmlFile = new File("/Users/lvr491/Documents/HL7Standards/HQMF/HQMFr2_1 2/EH/CMS73v3_R2.xml");
+//        File xmlFile = new File("tests/resources/xmlfiles/phema-bph-use-case.xml");
+        File xmlFile = new File("/Users/lvr491/Documents/HL7Standards/HQMF/HQMFr2_1 2/EH/CMS73v3_R2.xml");
         String hqmf = null;
         try {
             hqmf = FileUtils.readFileToString(xmlFile);

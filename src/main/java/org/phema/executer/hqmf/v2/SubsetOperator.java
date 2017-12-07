@@ -28,6 +28,20 @@ public class SubsetOperator {
         put("QDM_SUM:SUM", "COUNT");
     }};
 
+    public SubsetOperator(String type, Object value) {
+        this.entry = null;
+        this.type = type;
+        if (value == null) {
+            this.value = null;
+        }
+        else if (value instanceof Value) {
+            Value asValue = (Value)value;
+            asValue.setForceInclusive(true);
+            this.value = new Range("IVL_PQ", asValue, asValue, null);
+        }
+        this.value = value;
+    }
+
     public SubsetOperator(Node entry) throws XPathExpressionException {
         this.entry = entry;
 

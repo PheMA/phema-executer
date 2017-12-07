@@ -50,19 +50,86 @@ public class Document implements IDocument {
         extractCriteria();
 
         // Extract the population criteria and population collections
-        //TODO Finish implementing this
         DocumentPopulationHelper popHelper = new DocumentPopulationHelper((Node)this.entry.getDocumentElement(), (Node)this.document.getDocumentElement(), this, this.idGenerator, this.referenceIds);
         Object[] results = popHelper.extractPopulationsAndCriteria();
-        /*
-                pop_helper = HQMF2::DocumentPopulationHelper.new(@entry, @doc, self, @id_generator, @reference_ids)
-        @populations, @population_criteria = pop_helper.extract_populations_and_criteria
 
-      # Remove any data criteria from the main data criteria list that already has an equivalent member
-      #  and no references to it. The goal of this is to remove any data criteria that should not
-      #  be purely a source.
-        @data_criteria.reject! do |dc|
-                criteria_covered_by_criteria?(dc)
-                end*/
+        // Remove any data criteria from the main data criteria list that already has an equivalent member
+        //  and no references to it. The goal of this is to remove any data criteria that should not
+        //  be purely a source.
+        this.dataCriteria.removeIf(dc -> criteriaCoveredByCriteria(dc));
+    }
+
+    // Checks if one data criteria is covered by another (has all the appropriate elements of)
+    private boolean criteriaCoveredByCriteria(DataCriteria dc) {
+        // This original Ruby code doesn't appear to do anything (it should return the result to nothing, instead of
+        // modifying the reference_ids collection).  Assuming this does nothing, we're skipping implementing it here.
+        //@reference_ids.uniq
+
+        ArrayList<String> baseCriteriaDefs = new ArrayList<String>() {{
+            add("patient_characteristic_ethnicity");
+            add("patient_characteristic_gender");
+            add("patient_characteristic_payer");
+            add("patient_characteristic_race");
+        }};
+
+        boolean toReject = true;
+        // don't reject if anything refers directly to this criteria
+        toReject = toReject && (this.referenceIds.indexOf(dc.getId()) == -1);
+        // don't reject if it is a "base" criteria (no references but must exist)
+        toReject = toReject && !(baseCriteriaDefs.indexOf(dc.getDefinition()) >= 0);
+        // keep referral occurrence
+        toReject = toReject && ((dc.getSpecificOccurrenceConst() == null) || dc.getCodeListId().equals("2.16.840.1.113883.3.464.1003.101.12.1046"));
+        // don't reject unless there is a similar element
+        toReject = toReject && this.dataCriteria.stream().anyMatch(x -> (x != dc) // Don't check against itself
+                && (dc.getCodeListId().equals(x.getCodeListId())) // Ensure code list ids are the same
+                && detectCriteriaCoveredByCriteria(dc, x));
+        return toReject;
+    }
+
+    // Check if one data criteria contains the others information by checking that one has everything the other has
+    // (or more)
+    private boolean detectCriteriaCoveredByCriteria(DataCriteria dataCriteria, DataCriteria checkCriteria) {
+        boolean baseChecks = true;
+
+        // Check whether basic features are the same
+        baseChecks = baseChecks && Objects.equals(dataCriteria.getDefinition(), checkCriteria.getDefinition()); // same definition
+        baseChecks = baseChecks && Objects.equals(dataCriteria.getStatus(), checkCriteria.getStatus());  // same status
+        // same children
+        baseChecks = baseChecks && (String.join(",", dataCriteria.getChildrenCriteria().stream().sorted().toArray(String[]::new)).equals(
+            String.join(",", checkCriteria.getChildrenCriteria().stream().sorted().toArray(String[]::new))));
+        // Ensure it doesn't contain basic elements that should not be removed
+        baseChecks = baseChecks && !dataCriteria.isVariable(); // Ensure it's not a variable
+        baseChecks = baseChecks && (dataCriteria.getDerivationOperator() == null); // Ensure it doesn't have a derivation operator
+        baseChecks = baseChecks && (dataCriteria.getSubsetOperators().size() == 0); // Ensure it doesn't have a subset operator
+        // Ensure it doesn't have Temporal References
+        baseChecks = baseChecks && (dataCriteria.getTemporalReferences() == null || dataCriteria.getTemporalReferences().size() == 0);
+
+        return baseChecks && complexCoverage(dataCriteria, checkCriteria);
+    }
+
+    // Check elements that do not already exist; else, if they do, check if those elements are the same
+    // in a different, potentially matching, data criteria
+    private boolean complexCoverage(DataCriteria dataCriteria, DataCriteria checkCriteria) {
+        boolean sameValue = dataCriteria.getValue() == null ||
+                (dataCriteria.getValue().equals(checkCriteria.getValue()));
+        boolean sameFieldValues = sameFieldValuesCheck(dataCriteria, checkCriteria);
+        boolean sameNegationValues = dataCriteria.getNegationCodeListId() == null ||
+                dataCriteria.getNegationCodeListId().equals(checkCriteria.getNegationCodeListId());
+        return sameValue && sameNegationValues && sameFieldValues;
+    }
+
+    private boolean sameFieldValuesCheck(DataCriteria dataCriteria, DataCriteria checkCriteria) {
+        boolean empty = dataCriteria.getFieldValues() == null || dataCriteria.getFieldValues().size() == 0;
+        // Ignore STATUS (and ORDINAL for CMS172v5)
+        // The meaning of status has changed over time. Laboratory test and procedure now use status differently.
+        // This change is causing superficial discrepencies between the simplexml and hqmf regarding STATUS.
+        Object[] dcFiltered = dataCriteria.getFieldValues().entrySet().stream()
+                .filter(x -> !x.getKey().equals("STATUS") && !x.getKey().equals("ORDINAL")).toArray(Object[]::new);
+        Object[] ccFiltered = checkCriteria.getFieldValues().entrySet().stream()
+                .filter(x -> !x.getKey().equals("STATUS") && !x.getKey().equals("ORDINAL")).toArray(Object[]::new);
+        String left = (dcFiltered == null || dcFiltered.length == 0) ? null : dcFiltered.toString();
+        String right = (ccFiltered == null || ccFiltered.length == 0) ? null : ccFiltered.toString();
+        return empty || (left.equals(right));
     }
 
     private void extractCriteria() throws Exception {
@@ -96,6 +163,25 @@ public class Document implements IDocument {
             value = getAttributeValueFromDocument(alternateXpath);
         }
         return value;
+    }
+
+    // Adds data criteria to the Document's criteria list
+    // needed so data criteria can be added to a document from other objects
+    public void addDataCriteria(DataCriteria dataCriteria) {
+        if (this.dataCriteria == null) {
+            this.dataCriteria = new ArrayList<DataCriteria>();
+        }
+
+        this.dataCriteria.add(dataCriteria);
+    }
+
+    // Adds id of a data criteria to the list of reference ids
+    public void addReferenceId(String id) {
+        if (this.referenceIds == null) {
+            this.referenceIds = new ArrayList<String>();
+        }
+
+        this.referenceIds.add(id);
     }
 
     private Attribute readAttribute(Node attributeNode) throws XPathExpressionException {
@@ -196,10 +282,6 @@ public class Document implements IDocument {
         idGenerator = new IdGenerator();
         document = XmlHelpers.loadXMLFromString(hqmfContents);
         entry = document;
-//        documentXPath = XPathFactory.newInstance().newXPath();
-//        //XPath xPath = XPathFactory.newInstance().newXPath();
-//        NamespaceContext context = new UniversalNamespaceCache(document, true);
-//        documentXPath.setNamespaceContext(context);
         documentXPath = XmlHelpers.createXPath(document);
         id = getAttributeValueFromDocument("cda:id/@extension", "cda:id/@root");
         hqmfSetId = getAttributeValueFromDocument("cda:setId/@extension", "cda:setId/@root");
@@ -219,6 +301,19 @@ public class Document implements IDocument {
 
         // Used to keep track of referenced data criteria ids
         referenceIds = new ArrayList();
+    }
+
+    // Finds a data criteria by it's local variable name
+    public DataCriteria findCriteriaByLocalVariableName(String localVariableName) {
+        if (this.dataCriteria == null) {
+            return null;
+        }
+
+        DataCriteria criteria = this.dataCriteria.stream()
+                .filter(x -> x.getLocalVariableName().equals(localVariableName))
+                .findFirst()
+                .orElse(null);
+        return criteria;
     }
 
 }

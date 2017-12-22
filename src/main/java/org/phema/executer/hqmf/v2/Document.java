@@ -29,21 +29,11 @@ public class Document implements IDocument {
     private String hqmfVersionNumber = "";
     private String cmsId = "";
     private ArrayList<Attribute> attributes = null;
-    private ArrayList<DataCriteria> dataCriteria = null;
     private ArrayList<DataCriteria> sourceDataCriteria = null;
+    private ArrayList<DataCriteria> dataCriteria = null;
     private ArrayList referenceIds = null;
     private HashMap<String, DataCriteria> dataCriteriaReferences;
     private HashMap<String, String> occurrencesMap;
-
-//    public static final Map<String,String> NAMESPACES;
-//    static{
-//        Hashtable<String,String> tmp =
-//                new Hashtable<String,String>();
-//        tmp.put("cda", "urn:hl7-org:v3");
-//        tmp.put("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-//        tmp.put("qdm", "urn:hhs-qdm:hqmf-r2-extensions:v1");
-//        NAMESPACES = Collections.unmodifiableMap(tmp);
-//    }
 
     public Document(String hqmfContents, boolean useDefaultMeasurePeriod) throws Exception {
         setupDefaultValues(hqmfContents, useDefaultMeasurePeriod);
@@ -314,6 +304,87 @@ public class Document implements IDocument {
                 .findFirst()
                 .orElse(null);
         return criteria;
+    }
+
+
+    public String getHqmfSetId() {
+        return hqmfSetId;
+    }
+
+    public void setHqmfSetId(String hqmfSetId) {
+        this.hqmfSetId = hqmfSetId;
+    }
+
+    public String getHqmfVersionNumber() {
+        return hqmfVersionNumber;
+    }
+
+    public void setHqmfVersionNumber(String hqmfVersionNumber) {
+        this.hqmfVersionNumber = hqmfVersionNumber;
+    }
+
+    public String getCmsId() {
+        return cmsId;
+    }
+
+    public void setCmsId(String cmsId) {
+        this.cmsId = cmsId;
+    }
+
+    public ArrayList<Attribute> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(ArrayList<Attribute> attributes) {
+        this.attributes = attributes;
+    }
+
+    public ArrayList<DataCriteria> getDataCriteria() {
+        return dataCriteria;
+    }
+
+    public void setDataCriteria(ArrayList<DataCriteria> dataCriteria) {
+        this.dataCriteria = dataCriteria;
+    }
+
+    public ArrayList<DataCriteria> getSourceDataCriteria() {
+        return sourceDataCriteria;
+    }
+
+    public void setSourceDataCriteria(ArrayList<DataCriteria> sourceDataCriteria) {
+        this.sourceDataCriteria = sourceDataCriteria;
+    }
+
+    public ArrayList getReferenceIds() {
+        return referenceIds;
+    }
+
+    public void setReferenceIds(ArrayList referenceIds) {
+        this.referenceIds = referenceIds;
+    }
+
+    public HashMap<String, DataCriteria> getDataCriteriaReferences() {
+        return dataCriteriaReferences;
+    }
+
+    public void setDataCriteriaReferences(HashMap<String, DataCriteria> dataCriteriaReferences) {
+        this.dataCriteriaReferences = dataCriteriaReferences;
+    }
+
+    public HashMap<String, String> getOccurrencesMap() {
+        return occurrencesMap;
+    }
+
+    public void setOccurrencesMap(HashMap<String, String> occurrencesMap) {
+        this.occurrencesMap = occurrencesMap;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
 }

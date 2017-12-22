@@ -1,9 +1,18 @@
 package org.phema.executer;
 
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.io.FileUtils;
 import org.phema.executer.hqmf.IDocument;
 import org.phema.executer.hqmf.Parser;
+import org.phema.executer.interfaces.IValueSetRepository;
+import org.phema.executer.valueSets.FileValueSetRepository;
+
 import java.io.File;
+import java.nio.charset.Charset;
+import java.util.HashMap;
 
 /**
  * Created by Luke Rasmussen on 7/19/17.
@@ -39,14 +48,22 @@ public class CLITest {
 //        File xmlFile = new File("tests/resources/xmlfiles/PhEMA-T2DM-Simple.xml");
 //        File xmlFile = new File("tests/resources/xmlfiles/CMS_146_HQMF_R2.xml");
 //        File xmlFile = new File("/Users/lvr491/Development/MSPCTRA/H3/EP_CMS138v4_NQF0028_PREV_Tobacco/CMS138v4.xml");
-//        File xmlFile = new File("tests/resources/xmlfiles/phema-bph-use-case.xml");
-        File xmlFile = new File("/Users/lvr491/Documents/HL7Standards/HQMF/HQMFr2_1 2/EH/CMS73v3_R2.xml");
-        String hqmf = null;
+//        File xmlFile = new File("/Users/lvr491/Documents/HL7Standards/HQMF/HQMFr2_1 2/EH/CMS73v3_R2.xml");
         try {
+            File xmlFile = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.xml");
+            //File valueSets = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.csv");
+            //CSVParser csvParser = CSVParser.parse(valueSets, Charset.defaultCharset(), CSVFormat.DEFAULT);
+            File configFile = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.conf");
+            String hqmf = null;
+
+            Config config = ConfigFactory.parseFile(configFile);
+
             hqmf = FileUtils.readFileToString(xmlFile);
             Parser parser = new Parser();
             IDocument document = parser.parse(hqmf);
             System.out.println(document);
+
+            org.phema.executer.translator.HqmfToI2b2.translate(document, config);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -12,7 +12,7 @@ public class I2B2ExecutionEngine extends ExecutionEngineBase {
     }
 
     @Override
-    public boolean ValidateConfiguration(IExecutionConfiguration configuration) {
+    public boolean validateConfiguration(IExecutionConfiguration configuration) {
         return false;
     }
 }

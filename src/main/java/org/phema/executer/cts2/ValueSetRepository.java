@@ -1,7 +1,7 @@
 package org.phema.executer.cts2;
 
 import org.phema.executer.UniversalNamespaceCache;
-import org.phema.executer.cts2.models.ValueSet;
+import org.phema.executer.valueSets.models.ValueSet;
 import org.phema.executer.interfaces.IHttpHelper;
 import org.phema.executer.interfaces.IValueSetRepository;
 import org.w3c.dom.Document;
@@ -41,14 +41,14 @@ public class ValueSetRepository implements IValueSetRepository {
         this.httpHelper = httpHelper;
     }
 
-    public void Initialize(HashMap<String, String> parameters) throws Exception {
+    public void initialize(HashMap<String, String> parameters) throws Exception {
         baseUri = new URI(parameters.get(Parameters.BaseUri));
     }
 
-    public ArrayList<ValueSet> Search(String searchTerm) {
+    public ArrayList<ValueSet> search(String searchTerm) {
         try {
-            URI searchUri = httpHelper.ConcatenateUri(baseUri, String.format("valuesets?matchvalue=%s", searchTerm));
-            Document result = httpHelper.GetXml(searchUri);
+            URI searchUri = httpHelper.concatenateUri(baseUri, String.format("valuesets?matchvalue=%s", searchTerm));
+            Document result = httpHelper.getXml(searchUri);
             if (result == null) {
                 return null;
             }
@@ -73,10 +73,10 @@ public class ValueSetRepository implements IValueSetRepository {
         return null;
     }
 
-    public ValueSet GetByOID(String oid) {
+    public ValueSet getByOID(String oid) {
         try {
-            URI searchUri = httpHelper.ConcatenateUri(baseUri, String.format("valueset/%s", oid));
-            Document result = httpHelper.GetXml(searchUri);
+            URI searchUri = httpHelper.concatenateUri(baseUri, String.format("valueset/%s", oid));
+            Document result = httpHelper.getXml(searchUri);
             if (result == null) {
                 return null;
             }

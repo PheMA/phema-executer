@@ -1,7 +1,7 @@
 package org.phema.executer.cts2;
 
 import org.junit.jupiter.api.Test;
-import org.phema.executer.cts2.models.ValueSet;
+import org.phema.executer.valueSets.models.ValueSet;
 import org.phema.executer.util.HttpHelper;
 import org.phema.executer.util.XmlHelpers;
 import org.w3c.dom.Document;
@@ -35,7 +35,7 @@ class ValueSetRepositoryTest {
         ValueSetRepository repository = new ValueSetRepository(httpHelper);
         HashMap<String, String> parameters = new HashMap<String, String>();
         parameters.put(ValueSetRepository.Parameters.BaseUri, "http://test");
-        repository.Initialize(parameters);
+        repository.initialize(parameters);
         assertEquals("http://test", repository.getBaseUri().toString());
     }
 
@@ -44,7 +44,7 @@ class ValueSetRepositoryTest {
         ValueSetRepository repository = new ValueSetRepository(httpHelper);
         HashMap<String, String> parameters = new HashMap<String, String>();
         parameters.put(ValueSetRepository.Parameters.BaseUri, "http://test");
-        repository.Initialize(parameters);
+        repository.initialize(parameters);
         httpHelper.nextResponse = response;
         return repository;
     }
@@ -66,7 +66,7 @@ class ValueSetRepositoryTest {
                 "        <core:accessDate>2017-02-06T01:42:53.376-06:00</core:accessDate>\n" +
                 "    </core:heading>\n" +
                 "</ValueSetCatalogEntryDirectory>");
-        ArrayList<ValueSet> result = repository.Search("blah");
+        ArrayList<ValueSet> result = repository.search("blah");
         assertEquals(0, result.size());
     }
 
@@ -109,7 +109,7 @@ class ValueSetRepositoryTest {
                 "        </currentDefinition>\n" +
                 "    </entry>\n" +
                 "</ValueSetCatalogEntryDirectory>\n");
-        ArrayList<ValueSet> result = repository.Search("test");
+        ArrayList<ValueSet> result = repository.search("test");
         assertEquals(2, result.size());
         assertEquals("2.16.840.1.113883.3.1427.10000.3e006bb30cf84da1b0dc056fb0c510ae", result.get(0).getOid());
         assertEquals("Tests", result.get(0).getName());
@@ -154,7 +154,7 @@ class ValueSetRepositoryTest {
                 "    </valueSetCatalogEntry>\n" +
                 "</ValueSetCatalogEntryMsg>\n");
 
-        ValueSet result = repository.GetByOID("2.16.840.1.113883.3.1427.10000.1777f99bae7e4f4c9e4eeb4eb87b67cd");
+        ValueSet result = repository.getByOID("2.16.840.1.113883.3.1427.10000.1777f99bae7e4f4c9e4eeb4eb87b67cd");
         assertNotNull(result);
         assertEquals("2.16.840.1.113883.3.1427.10000.1777f99bae7e4f4c9e4eeb4eb87b67cd", result.getOid());
         assertEquals("My test value set", result.getName());
@@ -171,7 +171,7 @@ class ValueSetRepositoryTest {
                 "    <severity>ERROR</severity>\n" +
                 "</UnknownValueSet>");
 
-        ValueSet result = repository.GetByOID("2.16.840.1.113883.3.1427.10000.1777f99bae7e4f4c9e4eeb4eb87b67ce");
+        ValueSet result = repository.getByOID("2.16.840.1.113883.3.1427.10000.1777f99bae7e4f4c9e4eeb4eb87b67ce");
         assertNull(result);
     }
 }

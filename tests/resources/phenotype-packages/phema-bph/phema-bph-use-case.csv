@@ -1,0 +1,2 @@
+"value_set_oid", "value_set_name", "code", "description", "code_system", "code_system_version", "code_system_oid", "tty"
+"2.16.840.1.113762.1.4.1034.65", "AAN ALS ICD10", "G12.21", "Amyotrophic lateral sclerosis", "ICD10CM", "2018", "2.16.840.1.113883.6.90", "PT"

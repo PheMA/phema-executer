@@ -68,7 +68,7 @@ public class I2B2ExecutionConfiguration implements IExecutionEngineConfiguration
     }
 
     @Override
-    public DescriptiveResult Validate() {
+    public DescriptiveResult validate() {
         DescriptiveResult result = new DescriptiveResult(false);
         if (i2b2ProjectManagementUrl == null) {
             result.addDescription("You must specify an i2b2 project management (PM) cell URL.  This will be in a format like \"http://hostname:9090/i2b2/services/PMService/\" (note the inclusion of PMService)");

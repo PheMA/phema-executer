@@ -65,7 +65,7 @@ public class ExecutionConfiguration implements IExecutionConfiguration {
     public void setValueSetRepositories(ArrayList<IValueSetRepository> valueSetRepositories) { ValueSetRepositories = valueSetRepositories; }
 
     @Override
-    public DescriptiveResult Validate() {
+    public DescriptiveResult validate() {
         return null;
     }
 

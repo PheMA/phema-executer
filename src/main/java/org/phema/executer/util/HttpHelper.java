@@ -18,7 +18,7 @@ import java.net.URISyntaxException;
  * Created by Luke Rasmussen on 7/25/17.
  */
 public class HttpHelper implements IHttpHelper {
-    public Document PostXml(URI uri, Document message) throws Exception {
+    public Document postXml(URI uri, Document message) throws Exception {
         HttpClient client = new DefaultHttpClient();
         HttpPost post = new HttpPost(uri);
         String messageText = XmlHelpers.documentToString(message);
@@ -30,7 +30,7 @@ public class HttpHelper implements IHttpHelper {
         return XmlHelpers.loadXMLFromString(result);
     }
 
-    public Document GetXml(URI uri) throws Exception {
+    public Document getXml(URI uri) throws Exception {
         HttpClient client = new DefaultHttpClient();
         HttpGet get = new HttpGet(uri);
         get.setHeader("Accept", "application/xml");
@@ -40,7 +40,7 @@ public class HttpHelper implements IHttpHelper {
         return XmlHelpers.loadXMLFromString(result);
     }
 
-    public URI ConcatenateUri(URI base, String extraPath) throws URISyntaxException {
+    public URI concatenateUri(URI base, String extraPath) throws URISyntaxException {
         if (base == null) {
             return null;
         }

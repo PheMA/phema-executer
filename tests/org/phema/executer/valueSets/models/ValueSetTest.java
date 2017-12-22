@@ -1,6 +1,8 @@
 package org.phema.executer.cts2.models;
 
 import org.junit.jupiter.api.Test;
+import org.phema.executer.valueSets.models.Member;
+import org.phema.executer.valueSets.models.ValueSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -59,5 +61,14 @@ class ValueSetTest {
         ValueSet valueSet = new ValueSet("oid", "name");
         ValueSet otherValueSet = new ValueSet("oid", "name");
         assertTrue(valueSet.equals(otherValueSet));
+    }
+
+    @Test
+    void addMember() {
+        ValueSet valueSet = new ValueSet("oid", "name");
+        Member member = new Member("1", "2", "3", "4", "5");
+        valueSet.addMember(member);
+        assertEquals(1, valueSet.getMembers().size());
+        assertEquals(member, valueSet.getMembers().get(0));
     }
 }

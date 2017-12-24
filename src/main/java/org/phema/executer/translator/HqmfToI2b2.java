@@ -3,10 +3,15 @@ package org.phema.executer.translator;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigOrigin;
+import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.hqmf.IDocument;
 import org.phema.executer.hqmf.v2.DataCriteria;
 import org.phema.executer.hqmf.v2.Document;
+import org.phema.executer.i2b2.I2B2ExecutionConfiguration;
+import org.phema.executer.i2b2.ProjectManagementService;
 import org.phema.executer.interfaces.IValueSetRepository;
+import org.phema.executer.models.DescriptiveResult;
+import org.phema.executer.util.HttpHelper;
 import org.phema.executer.valueSets.FileValueSetRepository;
 
 import java.io.File;
@@ -19,10 +24,14 @@ import java.util.List;
  * Created by Luke Rasmussen on 12/7/17.
  */
 public class HqmfToI2b2 {
-    public static void translate(IDocument document, Config config) throws Exception {
+    public static void translate(IDocument document, Config config) throws PhemaUserException {
         if (document == null) {
             System.out.println("The document is null - exiting");
             return;
+        }
+
+        if (config == null) {
+            System.out.println("The configuration is null - exiting");
         }
 
         if (!(document instanceof Document)) {
@@ -30,9 +39,39 @@ public class HqmfToI2b2 {
             return;
         }
 
-        ArrayList<IValueSetRepository> valueSetRepositories = processValueSets(config);
+        // Build the i2b2-specific configuration information from our config object
+        I2B2ExecutionConfiguration configuration = new I2B2ExecutionConfiguration();
+        DescriptiveResult result = configuration.loadFromConfiguration(config);
+        if (!result.isSuccess()) {
+            throw new PhemaUserException(result);
+        }
+
+        // Create an instance of the project management service, and ensure that we are
+        // properly authenticated
+        ProjectManagementService pmService = new ProjectManagementService(configuration, new HttpHelper());
+        result = pmService.login();
+        if (!result.isSuccess()) {
+            throw new PhemaUserException(result);
+        }
+
+        // Build the full list of value set repositories that we are configured to use
+        // for this phenotype.
+        ArrayList<IValueSetRepository> valueSetRepositories = null;
+        try {
+            valueSetRepositories = processValueSets(config);
+        } catch (Exception e) {
+            throw new PhemaUserException("There was an error when trying to load the configuration details for your value set repositories.  Please double-check that you have specified all of the necessary configuration information, and that the file is formatted correctly.");
+        }
 
         // Now get the mapping configuration for the value sets.
+        ValueSetToI2b2Ontology valueSetTranslator = new ValueSetToI2b2Ontology();
+        try {
+            valueSetTranslator.initialize(config);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // Translate the value sets into the i2b2 ontology
 
         Document hqmfDocument = (Document)document;
         ArrayList<DataCriteria> dataCriteria = hqmfDocument.getDataCriteria();

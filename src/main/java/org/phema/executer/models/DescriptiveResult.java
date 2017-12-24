@@ -6,40 +6,46 @@ import java.util.ArrayList;
  * Created by Luke Rasmussen on 7/19/17.
  */
 public class DescriptiveResult {
-    private boolean Result;
-    private ArrayList<String> Description;
+    private boolean success;
+    private ArrayList<String> descriptions;
 
     public DescriptiveResult() {
-        setDescription(new ArrayList<String>());
+        setDescriptions(new ArrayList<>());
     }
 
     public DescriptiveResult(boolean result) {
-        setResult(result);
-        setDescription(new ArrayList<String>());
+        setSuccess(result);
+        setDescriptions(new ArrayList<>());
     }
 
-    public DescriptiveResult(boolean result, ArrayList<String> description) {
-        setResult(result);
-        setDescription(description);
+    public DescriptiveResult(boolean result, ArrayList<String> descriptions) {
+        setSuccess(result);
+        setDescriptions(descriptions);
     }
 
-    public boolean isResult() {
-        return Result;
+    public DescriptiveResult(boolean result, String description) {
+        setSuccess(result);
+        setDescriptions(new ArrayList<>());
+        addDescription(description);
     }
 
-    public void setResult(boolean result) {
-        Result = result;
+    public boolean isSuccess() {
+        return success;
     }
 
-    public ArrayList<String> getDescription() {
-        return Description;
+    public void setSuccess(boolean result) {
+        success = result;
     }
 
-    public void setDescription(ArrayList<String> description) {
-        Description = description;
+    public ArrayList<String> getDescriptions() {
+        return descriptions;
+    }
+
+    public void setDescriptions(ArrayList<String> description) {
+        descriptions = description;
     }
 
     public boolean addDescription(String description) {
-        return Description.add(description);
+        return this.descriptions.add(description);
     }
 }

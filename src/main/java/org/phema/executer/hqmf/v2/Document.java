@@ -49,6 +49,25 @@ public class Document implements IDocument {
         this.dataCriteria.removeIf(dc -> criteriaCoveredByCriteria(dc));
     }
 
+    /**
+     * Get all of the unique value set OIDs used by data criteria elements in this HQMF document
+     * @return Unique list of value set OIDs that are in this HQMF document
+     */
+    public ArrayList<String> getAllValueSetOids() {
+        HashSet<String> valueSetOids = new HashSet<>();
+        if (dataCriteria == null || dataCriteria.size() == 0) {
+            return new ArrayList<String>(valueSetOids);
+        }
+
+        for (DataCriteria criterion : this.sourceDataCriteria) {
+            String oid = criterion.getCodeListId();
+            if (oid != null && oid.length() > 0 && !valueSetOids.contains(oid)) {
+                valueSetOids.add(oid);
+            }
+        }
+        return new ArrayList<String>(valueSetOids);
+    }
+
     // Checks if one data criteria is covered by another (has all the appropriate elements of)
     private boolean criteriaCoveredByCriteria(DataCriteria dc) {
         // This original Ruby code doesn't appear to do anything (it should return the result to nothing, instead of

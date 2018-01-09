@@ -16,7 +16,11 @@ public class PhemaUserException extends Exception {
 
     public PhemaUserException(String message) { super(message); }
 
+    public PhemaUserException(String message, Exception innerException) { super(message, innerException); }
+
     public PhemaUserException(DescriptiveResult result) { super(String.join("\r\n", result.getDescriptions())); }
+
+    public PhemaUserException(DescriptiveResult result, Exception innerException) { super(String.join("\r\n", result.getDescriptions()), innerException); }
 
     //public PhemaUserException(ArrayList<String> messages) { super(String.join("\r\n", messages)); }
 }

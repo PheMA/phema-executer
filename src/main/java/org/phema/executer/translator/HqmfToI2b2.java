@@ -8,11 +8,14 @@ import org.phema.executer.hqmf.IDocument;
 import org.phema.executer.hqmf.v2.DataCriteria;
 import org.phema.executer.hqmf.v2.Document;
 import org.phema.executer.i2b2.I2B2ExecutionConfiguration;
+import org.phema.executer.i2b2.OntologyService;
 import org.phema.executer.i2b2.ProjectManagementService;
 import org.phema.executer.interfaces.IValueSetRepository;
 import org.phema.executer.models.DescriptiveResult;
+import org.phema.executer.models.i2b2.Concept;
 import org.phema.executer.util.HttpHelper;
 import org.phema.executer.valueSets.FileValueSetRepository;
+import org.phema.executer.valueSets.models.ValueSet;
 
 import java.io.File;
 import java.net.URL;
@@ -39,6 +42,8 @@ public class HqmfToI2b2 {
             return;
         }
 
+        Document hqmfDocument = (Document)document;
+
         // Build the i2b2-specific configuration information from our config object
         I2B2ExecutionConfiguration configuration = new I2B2ExecutionConfiguration();
         DescriptiveResult result = configuration.loadFromConfiguration(config);
@@ -54,26 +59,47 @@ public class HqmfToI2b2 {
             throw new PhemaUserException(result);
         }
 
+        OntologyService ontService = new OntologyService(pmService, configuration, new HttpHelper());
+
         // Build the full list of value set repositories that we are configured to use
         // for this phenotype.
         ArrayList<IValueSetRepository> valueSetRepositories = null;
         try {
             valueSetRepositories = processValueSets(config);
         } catch (Exception e) {
-            throw new PhemaUserException("There was an error when trying to load the configuration details for your value set repositories.  Please double-check that you have specified all of the necessary configuration information, and that the file is formatted correctly.");
+            throw new PhemaUserException("There was an error when trying to load the configuration details for your value set repositories.  Please double-check that you have specified all of the necessary configuration information, and that the file is formatted correctly.", e);
         }
 
         // Now get the mapping configuration for the value sets.
         ValueSetToI2b2Ontology valueSetTranslator = new ValueSetToI2b2Ontology();
         try {
-            valueSetTranslator.initialize(config);
+            valueSetTranslator.initialize(config, ontService);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new PhemaUserException("There was an error when trying to set up the rules to map from a value set to i2b2 concepts.  Please double-check that you have correctly specified the mapping rules.", e);
         }
 
-        // Translate the value sets into the i2b2 ontology
+        // Get the list of value sets from the document and find those that exist in the repository.  Make a note
+        // of those we can't find.
+        ArrayList<String> valueSetOids = document.getAllValueSetOids();
+        ArrayList<String> unmappedValueSets = new ArrayList<>();
+        ArrayList<ValueSet> valueSets = new ArrayList<>(valueSetOids.size());
+        for (String oid : valueSetOids) {
+            ValueSet valueSet = findValueSet(oid, valueSetRepositories);
+            if (valueSet != null) {
+                valueSets.add(valueSet);
+            }
+            else {
+                unmappedValueSets.add(oid);
+            }
+        }
 
-        Document hqmfDocument = (Document)document;
+        // Translate the value sets into the i2b2 ontology.  What we end up with is a mapping between a value set and
+        // a list of i2b2 Concepts.
+        HashMap<ValueSet, ArrayList<Concept>> valueSetConceptMap = new HashMap<>();
+        for (ValueSet valueSet : valueSets) {
+            valueSetConceptMap.put(valueSet, valueSetTranslator.translate(valueSet));
+        }
+
         ArrayList<DataCriteria> dataCriteria = hqmfDocument.getDataCriteria();
 //        // Age has special handling
 //        DataCriteria[] birthdateCriteria = dataCriteria.stream().filter(x -> x.getDefinition().equals("patient_characteristic_birthdate")).toArray(DataCriteria[]::new);
@@ -82,6 +108,24 @@ public class HqmfToI2b2 {
 //                System.out.println(birthdateCriterion);
 //            }
 //        }
+    }
+
+    /**
+     * Local helper function to find a value set from a list of value set repositories.  It assumes that the list of
+     * repositories is in order of preference, so it stops searching after the first is found.
+     * @param oid
+     * @param repositories
+     * @return The ValueSet definition, or null if no value set was found.
+     */
+    private static ValueSet findValueSet(String oid, List<IValueSetRepository> repositories) {
+        for (IValueSetRepository repository : repositories) {
+            ValueSet valueSet = repository.getByOID(oid);
+            if (valueSet != null) {
+                return valueSet;
+            }
+        }
+
+        return null;
     }
 
     /**

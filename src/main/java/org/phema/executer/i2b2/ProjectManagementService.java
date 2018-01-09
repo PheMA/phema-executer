@@ -1,9 +1,12 @@
 package org.phema.executer.i2b2;
 
 import org.phema.executer.UniversalNamespaceCache;
+import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.interfaces.IHttpHelper;
 import org.phema.executer.models.DescriptiveResult;
+import org.phema.executer.util.XmlHelpers;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -14,6 +17,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -22,6 +26,7 @@ import java.util.List;
 
 public class ProjectManagementService extends I2b2ServiceBase {
     private String authenticationToken;
+    private HashMap<String, String> cellData = new HashMap<>();
 
     public ProjectManagementService(I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper) {
         super(configuration, httpHelper);
@@ -32,6 +37,7 @@ public class ProjectManagementService extends I2b2ServiceBase {
         // previous token (if one exists), so that it doesn't remain cached in the event
         // of an authentication error.
         setAuthenticationToken("");
+        cellData = new HashMap<>();
 
         loadRequest("i2b2_login");
         message = message.replace("{{domain}}", configuration.getI2b2Domain());
@@ -51,13 +57,14 @@ public class ProjectManagementService extends I2b2ServiceBase {
             return new DescriptiveResult(false, "We were unable to attempt to log in to your i2b2 instance.  Please make sure that you have entered the correct Project Management URL, and that i2b2 is up and running.");
         }
         XPath xPath = XPathFactory.newInstance().newXPath();
-        NamespaceContext context = new UniversalNamespaceCache(i2b2Result, true, "cda");
+        NamespaceContext context = new UniversalNamespaceCache(i2b2Result, true, "");
         xPath.setNamespaceContext(context);
         Node status = null;
         Node token = null;
+        Element documentElement = i2b2Result.getDocumentElement();
         try {
-            status = (Node)xPath.evaluate("//response_header/result_status/status", i2b2Result.getDocumentElement(), XPathConstants.NODE);
-            token = (Node)xPath.evaluate("//message_body/configure/user/password", i2b2Result.getDocumentElement(), XPathConstants.NODE);
+            status = (Node)xPath.evaluate("//response_header/result_status/status", documentElement, XPathConstants.NODE);
+            token = (Node)xPath.evaluate("//message_body/ns4:configure/user/password", documentElement, XPathConstants.NODE);
         } catch (XPathExpressionException e) {
             return new DescriptiveResult(false, "There was an unexpected error when trying to get the result of your login attempt against i2b2.");
         }
@@ -74,8 +81,8 @@ public class ProjectManagementService extends I2b2ServiceBase {
 
         Node project = null;
         try {
-            project = (Node)xPath.evaluate("//message_body/configure/user/project[@id='" + configuration.getI2b2Project() + "']",
-                    i2b2Result.getDocumentElement(), XPathConstants.NODE);
+            project = (Node)xPath.evaluate("//message_body/ns4:configure/user/project[@id='" + configuration.getI2b2Project() + "']",
+                    documentElement, XPathConstants.NODE);
         } catch (XPathExpressionException e) {
             return new DescriptiveResult(false, "There was an unexpected error when trying to get the list of projects your i2b2 user has access to.");
         }
@@ -83,8 +90,8 @@ public class ProjectManagementService extends I2b2ServiceBase {
         if (project == null) {
             NodeList projects = null;
             try {
-                projects = (NodeList)xPath.evaluate("//message_body/configure/user/project",
-                        i2b2Result.getDocumentElement(), XPathConstants.NODESET);
+                projects = (NodeList)xPath.evaluate("//message_body/ns4:configure/user/project",
+                        documentElement, XPathConstants.NODESET);
             } catch (XPathExpressionException e) {
                 return new DescriptiveResult(false, "There was an unexpected error when trying to get the list of projects your i2b2 user has access to.");
             }
@@ -105,8 +112,30 @@ public class ProjectManagementService extends I2b2ServiceBase {
             return new DescriptiveResult(false, errorBuilder.toString());
         }
 
+        NodeList cells = null;
+        try {
+            cells = (NodeList)xPath.evaluate("//message_body/ns4:configure/cell_datas/cell_data", documentElement, XPathConstants.NODESET);
+        } catch (XPathExpressionException e) {
+            return new DescriptiveResult(false, "The user credentials provided are valid, but there are no i2b2 cells available for that user.");
+        }
+
+        for (int index = 0; index < cells.getLength(); index++) {
+            Node cellNode = cells.item(index);
+            if (cellNode == null || !(cellNode instanceof Element)) {
+                continue;
+            }
+
+            Element cellElement = (Element)cellNode;
+            cellData.put(cellElement.getAttribute("id"),
+                    XmlHelpers.getChildContent(cellElement, "url", ""));
+        }
+
         setAuthenticationToken(tokenValue);
         return new DescriptiveResult(true);
+    }
+
+    public String getCellUrl(String cell) {
+        return this.cellData.get(cell);
     }
 
     public String getAuthenticationToken() {

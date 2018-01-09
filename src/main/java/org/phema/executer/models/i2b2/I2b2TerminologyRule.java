@@ -21,4 +21,45 @@ public class I2b2TerminologyRule {
         this.destinationCodeMatch = destinationCodeMatch;
         this.destinationCodeReplace = destinationCodeReplace;
     }
+
+    public String getSourceTerminologyName() {
+        return sourceTerminologyName;
+    }
+
+    public void setSourceTerminologyName(String sourceTerminologyName) {
+        this.sourceTerminologyName = sourceTerminologyName;
+    }
+
+    public String getDestinationTerminologyPrefix() {
+        return destinationTerminologyPrefix;
+    }
+
+    public void setDestinationTerminologyPrefix(String destinationTerminologyPrefix) {
+        this.destinationTerminologyPrefix = destinationTerminologyPrefix;
+    }
+
+    public String getDestinationTerminologyDelimiter() {
+        return destinationTerminologyDelimiter;
+    }
+
+    public void setDestinationTerminologyDelimiter(String destinationTerminologyDelimiter) {
+        this.destinationTerminologyDelimiter = destinationTerminologyDelimiter;
+    }
+
+    public String getDestinationCodeMatch() {
+        return destinationCodeMatch;
+    }
+
+    public void setDestinationCodeMatch(String destinationCodeMatch) {
+        this.destinationCodeMatch = destinationCodeMatch;
+    }
+
+    public String getDestinationCodeReplace() {
+        return destinationCodeReplace;
+    }
+
+    public void setDestinationCodeReplace(String destinationCodeReplace) {
+        this.destinationCodeReplace = destinationCodeReplace;
+    }
+
 }

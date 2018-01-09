@@ -104,6 +104,60 @@ public class XmlHelpers {
         return array;
     }
 
+    /**
+     * From http://www.java2s.com/Code/Java/XML/Getchildfromanelementbyname.htm
+     * @param parent
+     * @param name
+     * @param defaultValue
+     * @return
+     */
+    public static String getChildContent(Element parent, String name, String defaultValue) {
+        Element child = getChild(parent, name);
+        if (child == null) {
+            return defaultValue;
+        } else {
+            String content = (String) getContent(child);
+            return (content != null) ? content : defaultValue;
+        }
+    }
+
+    /**
+     * From http://www.java2s.com/Code/Java/XML/Getchildfromanelementbyname.htm
+     * @param element
+     * @return
+     */
+    private static Object getContent(Element element) {
+        NodeList nl = element.getChildNodes();
+        StringBuffer content = new StringBuffer();
+        for (int i = 0; i < nl.getLength(); i++) {
+            Node node = nl.item(i);
+            switch (node.getNodeType()) {
+                case Node.ELEMENT_NODE:
+                    return node;
+                case Node.CDATA_SECTION_NODE:
+                case Node.TEXT_NODE:
+                    content.append(node.getNodeValue());
+                    break;
+            }
+        }
+        return content.toString().trim();
+    }
+
+    /**
+     * From http://www.java2s.com/Code/Java/XML/Getchildfromanelementbyname.htm
+     * @param parent
+     * @param name
+     * @return
+     */
+    private static Element getChild(Element parent, String name) {
+        for (Node child = parent.getFirstChild(); child != null; child = child.getNextSibling()) {
+            if (child instanceof Element && name.equals(child.getNodeName())) {
+                return (Element) child;
+            }
+        }
+        return null;
+    }
+
 //    public static String getAttributeValue(Element element, String xpath) throws XPathExpressionException {
 //        return getAttributeValue(element, xpath, "");
 //    }

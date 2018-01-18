@@ -1,0 +1,98 @@
+<ns6:request xmlns:ns4="http://www.i2b2.org/xsd/cell/crc/psm/1.1/" xmlns:ns7="http://www.i2b2.org/xsd/cell/ont/1.1/" xmlns:ns3="http://www.i2b2.org/xsd/cell/crc/pdo/1.1/" xmlns:ns5="http://www.i2b2.org/xsd/hive/plugin/" xmlns:ns2="http://www.i2b2.org/xsd/hive/pdo/1.1/" xmlns:ns6="http://www.i2b2.org/xsd/hive/msg/1.1/" xmlns:ns8="http://www.i2b2.org/xsd/cell/crc/psm/querydefinition/1.1/">
+    <message_header>
+        <sending_application>
+            <application_name>i2b2_QueryTool</application_name>
+            <application_version>1.6</application_version>
+        </sending_application>
+        <sending_facility>
+            <facility_name>PHS</facility_name>
+        </sending_facility>
+        <receiving_application>
+            <application_name>i2b2_DataRepositoryCell</application_name>
+            <application_version>1.6</application_version>
+        </receiving_application>
+        <receiving_facility>
+            <facility_name>PHS</facility_name>
+        </receiving_facility>
+        <security>
+            <domain>{{domain}}</domain>
+            <username>{{username}}</username>
+            <password is_token="true" token_ms_timeout="1800000">{{token}}</password>
+        </security>
+        <message_type>
+            <message_code>Q04</message_code>
+            <event_type>EQQ</event_type>
+        </message_type>
+        <message_control_id>
+            <message_num>LkdVyDy9LZd0zyLkX9Cmp</message_num>
+            <instance_num>0</instance_num>
+        </message_control_id>
+        <processing_id>
+            <processing_id>P</processing_id>
+            <processing_mode>I</processing_mode>
+        </processing_id>
+        <accept_acknowledgement_type>messageId</accept_acknowledgement_type>
+        <project_id>{{project}}</project_id>
+    </message_header>
+    <request_header>
+        <result_waittime_ms>180000</result_waittime_ms>
+    </request_header>
+    <message_body>
+        <ns4:psmheader>
+            <user group="{{project}}" login="{{username}}">{{username}}</user>
+            <patient_set_limit>0</patient_set_limit>
+            <estimated_time>0</estimated_time>
+            <query_mode>optimize_without_temp_table</query_mode>
+            <request_type>CRC_QRY_runQueryInstance_fromQueryDefinition</request_type>
+        </ns4:psmheader>
+        <ns4:request xsi:type="ns4:query_definition_requestType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <query_definition>
+                <query_name>{{query_name}}</query_name>
+                <query_timing>ANY</query_timing>
+                <specificity_scale>0</specificity_scale>
+                {{panels}}
+                <!--
+                <panel>
+                    <panel_number>1</panel_number>
+                    <panel_accuracy_scale>100</panel_accuracy_scale>
+                    <invert>0</invert>
+                    <panel_timing>ANY</panel_timing>
+                    <total_item_occurrences>1</total_item_occurrences>
+                    <item>
+                        <item_key>masterid:136</item_key>
+                        <item_name>(PrevQuery)Diabete-  18-34@11:33:26</item_name>
+                        <tooltip>Diabete-  18-34@11:33:26</tooltip>
+                        <item_is_synonym>false</item_is_synonym>
+                        <hlevel>0</hlevel>
+                    </item>
+                </panel>
+                -->
+
+                <!--
+                <panel>
+                    <panel_number>1</panel_number>
+                    <panel_accuracy_scale>100</panel_accuracy_scale>
+                    <invert>0</invert>
+                    <panel_timing>ANY</panel_timing>
+                    <total_item_occurrences>1</total_item_occurrences>
+                    <item>
+                        <hlevel>3</hlevel>
+                        <item_name>Essential (primary) hypertension</item_name>
+                        <item_key>\\ICD10_ICD9\Diagnoses\(I00-I99) Dise~3w8h\(I10-I15) Hype~5igm\(I10) Essentia~sbwm\</item_key>
+                        <tooltip>Diagnoses \ Diseases of the circulatory system (i00-i99) \ Hypertensive diseases (i10-i15) \ Essential (primary) hypertension</tooltip>
+                        <class>ENC</class>
+                        <item_icon>FA</item_icon>
+                        <item_is_synonym>false</item_is_synonym>
+                    </item>
+                </panel>
+                -->
+            </query_definition>
+
+            <result_output_list>
+                <!-- This is left empty on purpose.  We want to save the query definition, but not run the query -->
+            </result_output_list>
+
+        </ns4:request>
+
+    </message_body>
+</ns6:request>

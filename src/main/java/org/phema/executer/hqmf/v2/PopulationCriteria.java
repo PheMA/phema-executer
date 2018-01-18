@@ -1,5 +1,6 @@
 package org.phema.executer.hqmf.v2;
 
+import org.apache.commons.lang.StringUtils;
 import org.phema.executer.util.XmlHelpers;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -79,7 +80,7 @@ public class PopulationCriteria {
         if (!this.type.equals("AGGREGATE")) {
             // Generate the precondition for this population
             if (this.preconditions.size() > 1 ||
-                    (this.preconditions.size() == 1 && !preconditions.get(0).getConjunction().equals(conjunctionCode()))) {
+                    (this.preconditions.size() == 1 && !StringUtils.equals(preconditions.get(0).getConjunction(), conjunctionCode()))) {
                 Precondition newPrecondition = new Precondition(Integer.toString(idGenerator.nextId()), conjunctionCode(), this.preconditions);
                 this.preconditions = new ArrayList<Precondition>(){{ add(newPrecondition); }};
             }
@@ -193,7 +194,10 @@ public class PopulationCriteria {
         NodeList preconditionNodes = (NodeList)this.xPath.evaluate("./*/cda:precondition[not(@nullFlavor)]", this.entry, XPathConstants.NODESET);
         for (int index = 0; index < preconditionNodes.getLength(); index++) {
             Precondition precondition = Precondition.parse(preconditionNodes.item(index), this.document, idGenerator);
-            if (precondition != null && precondition.getReference() != null && precondition.hasPreconditions()) {
+            if (precondition == null || (precondition.getReference() == null && !precondition.hasPreconditions())) {
+                // Do nothing
+            }
+            else {
                 preconditions.add(precondition);
             }
         }

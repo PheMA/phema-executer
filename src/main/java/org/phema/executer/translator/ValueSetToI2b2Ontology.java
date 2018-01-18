@@ -84,6 +84,10 @@ public class ValueSetToI2b2Ontology {
 
     private void initializeTerminologyRules(Config config) throws Exception {
         this.terminologyRules = new ArrayList<>();
+        if (!config.hasPath("execution.i2b2.valueSetMapping.terminologyRules")) {
+            return;
+        }
+
         List<? extends ConfigObject> ruleList = config.getObjectList("execution.i2b2.valueSetMapping.terminologyRules");
         if (ruleList == null || ruleList.size() == 0) {
             return;
@@ -106,6 +110,10 @@ public class ValueSetToI2b2Ontology {
 
     private void initializeValueSetRules(Config config) throws Exception {
         this.valueSetRules = new ArrayList<>();
+        if (!config.hasPath("execution.i2b2.valueSetMapping.valueSetRules")) {
+            return;
+        }
+
         List<? extends ConfigObject> ruleList = config.getObjectList("execution.i2b2.valueSetMapping.valueSetRules");
         if (ruleList == null || ruleList.size() == 0) {
             return;
@@ -121,7 +129,11 @@ public class ValueSetToI2b2Ontology {
     }
 
     private void initializeOverrideRules(Config config) throws Exception {
-        this.valueSetRules = new ArrayList<>();
+        this.overrideRules = new ArrayList<>();
+        if (!config.hasPath("execution.i2b2.valueSetMapping.overrideRules")) {
+            return;
+        }
+
         List<? extends ConfigObject> ruleList = config.getObjectList("execution.i2b2.valueSetMapping.overrideRules");
         if (ruleList == null || ruleList.size() == 0) {
             return;

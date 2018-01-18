@@ -70,13 +70,18 @@ public class OntologyService extends I2b2ServiceBase {
             if (!concepts.containsKey(key)) {
                 concepts.put(key, new Concept(key,
                         XmlHelpers.getChildContent(conceptElement, "name", ""),
-                        XmlHelpers.getChildContent(conceptElement, "basecode", "")));
+                        XmlHelpers.getChildContent(conceptElement, "basecode", ""),
+                        XmlHelpers.getChildContentAsInt(conceptElement, "level"),
+                        XmlHelpers.getChildContent(conceptElement, "tooltip", ""),
+                        XmlHelpers.getChildContent(conceptElement, "synonym_cd", "false"),
+                        XmlHelpers.getChildContent(conceptElement, "visualattributes", "")));
             }
         }
 
         return new ArrayList<>(concepts.values());
     }
 
+    @Override
     public ProjectManagementService getProjectManagementService() {
         return pmService;
     }

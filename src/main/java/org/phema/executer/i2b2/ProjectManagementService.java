@@ -145,4 +145,6 @@ public class ProjectManagementService extends I2b2ServiceBase {
     public void setAuthenticationToken(String authenticationToken) {
         this.authenticationToken = authenticationToken;
     }
+
+    public ProjectManagementService getProjectManagementService() { return this; }
 }

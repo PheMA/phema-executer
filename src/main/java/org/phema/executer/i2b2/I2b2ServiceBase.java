@@ -12,7 +12,7 @@ import java.util.Scanner;
 /**
  * Created by Luke Rasmussen on 7/19/17.
  */
-public class I2b2ServiceBase {
+public abstract class I2b2ServiceBase {
     protected String message = "";
     protected I2B2ExecutionConfiguration configuration = null;
     protected IHttpHelper httpHelper = null;
@@ -30,4 +30,6 @@ public class I2b2ServiceBase {
     public Document getMessage() throws Exception {
         return XmlHelpers.loadXMLFromString(message);
     }
+
+    public abstract ProjectManagementService getProjectManagementService();
 }

@@ -34,7 +34,16 @@ public class Document implements IDocument {
     private ArrayList referenceIds = null;
     private HashMap<String, DataCriteria> dataCriteriaReferences;
     private HashMap<String, String> occurrencesMap;
+    private ArrayList<Population> populations;
+    private ArrayList<PopulationCriteria> populationCriteria;
 
+
+    /**
+     * Create a new HQMF2::Document instance by parsing the given HQMF contents
+     * @param hqmfContents String containing the HQMF contents to be parsed
+     * @param useDefaultMeasurePeriod
+     * @throws Exception
+     */
     public Document(String hqmfContents, boolean useDefaultMeasurePeriod) throws Exception {
         setupDefaultValues(hqmfContents, useDefaultMeasurePeriod);
         extractCriteria();
@@ -42,6 +51,8 @@ public class Document implements IDocument {
         // Extract the population criteria and population collections
         DocumentPopulationHelper popHelper = new DocumentPopulationHelper((Node)this.entry.getDocumentElement(), (Node)this.document.getDocumentElement(), this, this.idGenerator, this.referenceIds);
         Object[] results = popHelper.extractPopulationsAndCriteria();
+        this.populations = (ArrayList<Population>)results[0];
+        this.populationCriteria = (ArrayList<PopulationCriteria>)results[1];
 
         // Remove any data criteria from the main data criteria list that already has an equivalent member
         //  and no references to it. The goal of this is to remove any data criteria that should not
@@ -55,7 +66,7 @@ public class Document implements IDocument {
      */
     public ArrayList<String> getAllValueSetOids() {
         HashSet<String> valueSetOids = new HashSet<>();
-        if (dataCriteria == null || dataCriteria.size() == 0) {
+        if (sourceDataCriteria == null || sourceDataCriteria.size() == 0) {
             return new ArrayList<String>(valueSetOids);
         }
 

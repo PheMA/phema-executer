@@ -50,10 +50,10 @@ public class CLITest {
 //        File xmlFile = new File("/Users/lvr491/Development/MSPCTRA/H3/EP_CMS138v4_NQF0028_PREV_Tobacco/CMS138v4.xml");
 //        File xmlFile = new File("/Users/lvr491/Documents/HL7Standards/HQMF/HQMFr2_1 2/EH/CMS73v3_R2.xml");
         try {
-            File xmlFile = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.xml");
+            File xmlFile = new File("tests/resources/phenotype-packages/phema-simple/phema-simple.xml");
             //File valueSets = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.csv");
             //CSVParser csvParser = CSVParser.parse(valueSets, Charset.defaultCharset(), CSVFormat.DEFAULT);
-            File configFile = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.conf");
+            File configFile = new File("tests/resources/phenotype-packages/phema-simple/phema-simple.conf");
             String hqmf = null;
 
             Config config = ConfigFactory.parseFile(configFile);

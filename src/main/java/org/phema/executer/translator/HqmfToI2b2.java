@@ -7,6 +7,7 @@ import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.hqmf.IDocument;
 import org.phema.executer.hqmf.v2.DataCriteria;
 import org.phema.executer.hqmf.v2.Document;
+import org.phema.executer.i2b2.CRCService;
 import org.phema.executer.i2b2.I2B2ExecutionConfiguration;
 import org.phema.executer.i2b2.OntologyService;
 import org.phema.executer.i2b2.ProjectManagementService;
@@ -17,11 +18,10 @@ import org.phema.executer.util.HttpHelper;
 import org.phema.executer.valueSets.FileValueSetRepository;
 import org.phema.executer.valueSets.models.ValueSet;
 
+import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by Luke Rasmussen on 12/7/17.
@@ -100,6 +100,16 @@ public class HqmfToI2b2 {
             valueSetConceptMap.put(valueSet, valueSetTranslator.translate(valueSet));
         }
 
+        CRCService crcService = new CRCService(pmService, configuration, new HttpHelper());
+
+        // Create query definitions for all of the underlying source data criteria.  Once saved, these will be combined
+        // into a larger, final query.
+        try {
+            defineDataCriteriaQueries(((Document) document).getSourceDataCriteria(), valueSetConceptMap, crcService);
+        } catch (XPathExpressionException e) {
+            throw new PhemaUserException("There was an unexpected error when trying to build the i2b2 query.", e);
+        }
+
         ArrayList<DataCriteria> dataCriteria = hqmfDocument.getDataCriteria();
 //        // Age has special handling
 //        DataCriteria[] birthdateCriteria = dataCriteria.stream().filter(x -> x.getDefinition().equals("patient_characteristic_birthdate")).toArray(DataCriteria[]::new);
@@ -108,6 +118,22 @@ public class HqmfToI2b2 {
 //                System.out.println(birthdateCriterion);
 //            }
 //        }
+    }
+
+    private static void defineDataCriteriaQueries(ArrayList<DataCriteria> dataCriteria, HashMap<ValueSet, ArrayList<Concept>> valueSetConceptMap, CRCService crcService) throws PhemaUserException, XPathExpressionException {
+        for (DataCriteria criterion : dataCriteria) {
+            String valueSetOid = criterion.getCodeListId();
+            Optional<Map.Entry<ValueSet, ArrayList<Concept>>> conceptsResult = valueSetConceptMap.entrySet().stream()
+                    .filter(x -> x.getKey().getOid().equals(valueSetOid))
+                    .findFirst();
+            if (!conceptsResult.isPresent() && conceptsResult.get().getValue() != null) {
+                throw new PhemaUserException("There was no value set specified for one or more data elements.  We are unable to keep executing the phenotype definition.");
+            }
+
+            ArrayList<Concept> concepts = conceptsResult.get().getValue();
+            String panel = crcService.createPanelXmlString(1, false, 1, concepts);
+            crcService.runQueryInstance(criterion.getId(), panel);
+        }
     }
 
     /**

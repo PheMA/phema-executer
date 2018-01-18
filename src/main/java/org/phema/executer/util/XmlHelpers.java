@@ -1,6 +1,7 @@
 package org.phema.executer.util;
 
 import org.phema.executer.UniversalNamespaceCache;
+import org.phema.executer.exception.PhemaUserException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -10,16 +11,14 @@ import org.xml.sax.InputSource;
 import javax.xml.namespace.NamespaceContext;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import java.io.File;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -122,6 +121,40 @@ public class XmlHelpers {
     }
 
     /**
+     * Retrieve an element's content and convert it to an int.  If the value does not exist, or it is not an
+     * integer, we will throw an exception.
+     * @param parent The Element to search for the value
+     * @param name The name of the child node within parent
+     * @return An integer representation of the value contained in the node.
+     */
+    public static int getChildContentAsInt(Element parent, String name) throws PhemaUserException {
+        String value = getChildContent(parent, name, "");
+        if (value.length() == 0) {
+            throw new PhemaUserException("There was an unexpected error when trying to get a term hierarchy level - the hierarchy level could not be found from the i2b2 response.");
+        }
+
+        if (!tryParseInt(value)) {
+            throw new PhemaUserException("There was an unexpected error when trying to get a term hierarchy level - the hierarchy level is not an integer.");
+        }
+
+        return Integer.parseInt(value);
+    }
+
+    /**
+     * From https://stackoverflow.com/a/8392032/5670646
+     * @param value
+     * @return
+     */
+    private static boolean tryParseInt(String value) {
+        try {
+            Integer.parseInt(value);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /**
      * From http://www.java2s.com/Code/Java/XML/Getchildfromanelementbyname.htm
      * @param element
      * @return
@@ -156,6 +189,14 @@ public class XmlHelpers {
             }
         }
         return null;
+    }
+
+    public static void saveToFile(Document document, String fileName) throws Exception{
+        TransformerFactory tranFactory = TransformerFactory.newInstance();
+        Transformer aTransformer = tranFactory.newTransformer();
+        Source src = new DOMSource(document);
+        Result dest = new StreamResult(new File(fileName));
+        aTransformer.transform(src, dest);
     }
 
 //    public static String getAttributeValue(Element element, String xpath) throws XPathExpressionException {

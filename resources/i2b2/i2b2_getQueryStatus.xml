@@ -1,4 +1,4 @@
-<ns6:request xmlns:ns4="http://www.i2b2.org/xsd/cell/crc/psm/1.1/" xmlns:ns7="http://www.i2b2.org/xsd/cell/ont/1.1/" xmlns:ns3="http://www.i2b2.org/xsd/cell/crc/pdo/1.1/" xmlns:ns5="http://www.i2b2.org/xsd/hive/plugin/" xmlns:ns2="http://www.i2b2.org/xsd/hive/pdo/1.1/" xmlns:ns6="http://www.i2b2.org/xsd/hive/msg/1.1/" xmlns:ns8="http://www.i2b2.org/xsd/cell/crc/psm/querydefinition/1.1/">
+<ns6:request xmlns:ns4="http://www.i2b2.org/xsd/cell/crc/psm/1.1/" xmlns:ns7="http://www.i2b2.org/xsd/cell/crc/psm/querydefinition/1.1/" xmlns:ns3="http://www.i2b2.org/xsd/cell/crc/pdo/1.1/" xmlns:ns5="http://www.i2b2.org/xsd/hive/plugin/" xmlns:ns2="http://www.i2b2.org/xsd/hive/pdo/1.1/" xmlns:ns6="http://www.i2b2.org/xsd/hive/msg/1.1/">
     <message_header>
         <sending_application>
             <application_name>i2b2_QueryTool</application_name>
@@ -24,7 +24,7 @@
             <event_type>EQQ</event_type>
         </message_type>
         <message_control_id>
-            <message_num>LkdVyDy9LZd0zyLkX9Cmp</message_num>
+            <message_num>J9uhvhS1E6tmcrWOc741k</message_num>
             <instance_num>0</instance_num>
         </message_control_id>
         <processing_id>
@@ -39,25 +39,13 @@
     </request_header>
     <message_body>
         <ns4:psmheader>
-            <user group="{{project}}" login="{{username}}">{{username}}</user>
+            <user login="{{username}}">{{username}}</user>
             <patient_set_limit>0</patient_set_limit>
             <estimated_time>0</estimated_time>
-            <query_mode>optimize_without_temp_table</query_mode>
-            <request_type>CRC_QRY_runQueryInstance_fromQueryDefinition</request_type>
+            <request_type>CRC_QRY_getQueryInstanceList_fromQueryMasterId</request_type>
         </ns4:psmheader>
-        <ns4:request xsi:type="ns4:query_definition_requestType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-            <query_definition>
-                <query_name>{{query_name}}</query_name>
-                <query_timing>ANY</query_timing>
-                <specificity_scale>0</specificity_scale>
-                {{panels}}
-            </query_definition>
-
-            <result_output_list>
-                {{result_type}}
-            </result_output_list>
-
+        <ns4:request xsi:type="ns4:master_requestType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <query_master_id>{{query_master_id}}</query_master_id>
         </ns4:request>
-
     </message_body>
 </ns6:request>

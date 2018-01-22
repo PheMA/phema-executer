@@ -7,6 +7,8 @@ import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.hqmf.IDocument;
 import org.phema.executer.hqmf.v2.DataCriteria;
 import org.phema.executer.hqmf.v2.Document;
+import org.phema.executer.hqmf.v2.PopulationCriteria;
+import org.phema.executer.hqmf.v2.Precondition;
 import org.phema.executer.i2b2.CRCService;
 import org.phema.executer.i2b2.I2B2ExecutionConfiguration;
 import org.phema.executer.i2b2.OntologyService;
@@ -14,6 +16,7 @@ import org.phema.executer.i2b2.ProjectManagementService;
 import org.phema.executer.interfaces.IValueSetRepository;
 import org.phema.executer.models.DescriptiveResult;
 import org.phema.executer.models.i2b2.Concept;
+import org.phema.executer.models.i2b2.QueryMaster;
 import org.phema.executer.util.HttpHelper;
 import org.phema.executer.valueSets.FileValueSetRepository;
 import org.phema.executer.valueSets.models.ValueSet;
@@ -22,12 +25,18 @@ import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.net.URL;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Luke Rasmussen on 12/7/17.
  */
 public class HqmfToI2b2 {
-    public static void translate(IDocument document, Config config) throws PhemaUserException {
+    private HashMap<DataCriteria, QueryMaster> criteriaQueryMap = null;
+
+    public void translate(IDocument document, Config config) throws PhemaUserException {
+        // Reset any pre-existing variables
+        criteriaQueryMap = null;
+
         if (document == null) {
             System.out.println("The document is null - exiting");
             return;
@@ -105,12 +114,33 @@ public class HqmfToI2b2 {
         // Create query definitions for all of the underlying source data criteria.  Once saved, these will be combined
         // into a larger, final query.
         try {
-            defineDataCriteriaQueries(((Document) document).getSourceDataCriteria(), valueSetConceptMap, crcService);
-        } catch (XPathExpressionException e) {
+            criteriaQueryMap = defineDataCriteriaQueries(hqmfDocument.getSourceDataCriteria(), valueSetConceptMap, crcService);
+        } catch (Exception e) {
             throw new PhemaUserException("There was an unexpected error when trying to build the i2b2 query.", e);
         }
 
-        ArrayList<DataCriteria> dataCriteria = hqmfDocument.getDataCriteria();
+        // Now go through and combine these into more complex queries
+        List<PopulationCriteria> populationCriteria = hqmfDocument.getPopulationCriteria().stream().filter(x -> x.getType().equals(PopulationCriteria.IPP)).collect(Collectors.toList());
+        if (populationCriteria.size() != 1) {
+            throw new PhemaUserException("Currently the PhEMA Executer is only able to process HQMF documents with a single Initial Patient Population defined");
+        }
+
+        PopulationCriteria ipp = populationCriteria.get(0);
+        if (ipp.getPreconditions().size() != 1) {
+            throw new PhemaUserException("Currently the PhEMA Executer assumes there is only one top-most condition for a population.");
+        }
+
+        Precondition precondition = ipp.getPreconditions().get(0);
+        QueryMaster masterQuery = null;
+        try {
+            masterQuery = buildQueryFromPreconditions(crcService, precondition, true);
+            crcService.pollForQueryCompletion(masterQuery);
+        } catch (Exception e) {
+            throw new PhemaUserException("We encountered an error when trying to run your phenotype in i2b2.  Please see the PhEMA Executer logs for more details.  If insufficient details exist, you may need to work with your i2b2 administrator to see if there are reported failures from within i2b2.", e);
+        }
+
+
+        //ArrayList<DataCriteria> dataCriteria = hqmfDocument.getDataCriteria();
 //        // Age has special handling
 //        DataCriteria[] birthdateCriteria = dataCriteria.stream().filter(x -> x.getDefinition().equals("patient_characteristic_birthdate")).toArray(DataCriteria[]::new);
 //        if (birthdateCriteria != null && birthdateCriteria.length > 0) {
@@ -120,7 +150,50 @@ public class HqmfToI2b2 {
 //        }
     }
 
-    private static void defineDataCriteriaQueries(ArrayList<DataCriteria> dataCriteria, HashMap<ValueSet, ArrayList<Concept>> valueSetConceptMap, CRCService crcService) throws PhemaUserException, XPathExpressionException {
+    private QueryMaster buildQueryFromPreconditions(CRCService crcService, Precondition parentCondition, boolean returnResults) throws Exception {
+        ArrayList<QueryMaster> queryItems = new ArrayList<>();
+        ArrayList<Precondition> preconditions = parentCondition.getPreconditions();
+        for (Precondition precondition : preconditions) {
+            if (precondition.hasPreconditions()) {
+                QueryMaster query = buildQueryFromPreconditions(crcService, precondition, false);
+                queryItems.add(query);
+            }
+            else if (precondition.getReference() != null){
+                // If it doesn't have more preconditions, it's an element that we need to query for.  Get
+                // the query entry from our cache.
+                Optional<Map.Entry<DataCriteria, QueryMaster>> entry = criteriaQueryMap.entrySet().stream().filter(x -> x.getKey().getOriginalId().equals(precondition.getReference().getId())).findFirst();
+                if (entry.isPresent()) {
+                    queryItems.add(entry.get().getValue());
+                }
+            }
+        }
+
+        // Once we get a definition that is just QueryMaster entries, we need to create a new query
+        // master based off of that.
+        if (queryItems.size() > 0) {
+            // TODO: Counts (e.g., >=2 instances)
+            // TODO: Exclusion (NOT)
+            QueryMaster query = crcService.runQueryInstance(parentCondition.getId(), crcService.createQueryPanelXmlString(
+                    1, requireAll(parentCondition.getConjunction()), parentCondition.isNegation(), 1, queryItems), returnResults);
+            return query;
+        }
+
+        return null;
+    }
+
+    private boolean requireAll(String conjunction) throws PhemaUserException {
+        switch (conjunction) {
+            case Precondition.ALL_TRUE:
+                return true;
+            case Precondition.AT_LEAST_ONE_TRUE:
+                return false;
+            default:
+                throw new PhemaUserException(String.format("The PhEMA Executer is not currently capable of handling a boolean conjunction of '%s'", conjunction));
+        }
+    }
+
+    private HashMap<DataCriteria, QueryMaster> defineDataCriteriaQueries(ArrayList<DataCriteria> dataCriteria, HashMap<ValueSet, ArrayList<Concept>> valueSetConceptMap, CRCService crcService) throws Exception {
+        HashMap<DataCriteria, QueryMaster> criteriaQueryMap = new HashMap<>();
         for (DataCriteria criterion : dataCriteria) {
             String valueSetOid = criterion.getCodeListId();
             Optional<Map.Entry<ValueSet, ArrayList<Concept>>> conceptsResult = valueSetConceptMap.entrySet().stream()
@@ -131,9 +204,12 @@ public class HqmfToI2b2 {
             }
 
             ArrayList<Concept> concepts = conceptsResult.get().getValue();
-            String panel = crcService.createPanelXmlString(1, false, 1, concepts);
-            crcService.runQueryInstance(criterion.getId(), panel);
+            String panel = crcService.createConceptPanelXmlString(1, false, false, 1, concepts);
+            QueryMaster dataCriteriaQuery = crcService.runQueryInstance(criterion.getId(), panel, false);
+            criteriaQueryMap.put(criterion, dataCriteriaQuery);
         }
+
+        return criteriaQueryMap;
     }
 
     /**
@@ -143,7 +219,7 @@ public class HqmfToI2b2 {
      * @param repositories
      * @return The ValueSet definition, or null if no value set was found.
      */
-    private static ValueSet findValueSet(String oid, List<IValueSetRepository> repositories) {
+    private ValueSet findValueSet(String oid, List<IValueSetRepository> repositories) {
         for (IValueSetRepository repository : repositories) {
             ValueSet valueSet = repository.getByOID(oid);
             if (valueSet != null) {
@@ -160,7 +236,7 @@ public class HqmfToI2b2 {
      * @return FileValueSetRepository created from the ConfigObject
      * @throws Exception
      */
-    private static FileValueSetRepository createFileValueSetRepository(ConfigObject config) throws Exception {
+    private FileValueSetRepository createFileValueSetRepository(ConfigObject config) throws Exception {
         if (!config.containsKey("format")) {
             throw new Exception("A value set definition must contain a 'format' field of 'CSV' or 'VSAC'");
         }
@@ -185,7 +261,7 @@ public class HqmfToI2b2 {
      * @return ArrayList&lt;IValueSetRepository&gt; containing all configured value sets
      * @throws Exception
      */
-    private static ArrayList<IValueSetRepository> processValueSets(Config config) throws Exception {
+    private ArrayList<IValueSetRepository> processValueSets(Config config) throws Exception {
         ArrayList<IValueSetRepository> valueSetRepositories = new ArrayList<>();
 
         List<? extends ConfigObject> valueSetObjects = config.getObjectList("execution.valueSets");

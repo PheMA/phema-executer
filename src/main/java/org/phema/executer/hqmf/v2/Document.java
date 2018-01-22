@@ -417,4 +417,19 @@ public class Document implements IDocument {
         this.id = id;
     }
 
+    public ArrayList<Population> getPopulations() {
+        return populations;
+    }
+
+    public void setPopulations(ArrayList<Population> populations) {
+        this.populations = populations;
+    }
+
+    public ArrayList<PopulationCriteria> getPopulationCriteria() {
+        return populationCriteria;
+    }
+
+    public void setPopulationCriteria(ArrayList<PopulationCriteria> populationCriteria) {
+        this.populationCriteria = populationCriteria;
+    }
 }

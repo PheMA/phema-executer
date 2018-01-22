@@ -150,4 +150,12 @@ public class Precondition {
     public void setId(String id) {
         this.id = id;
     }
+
+    public boolean isNegation() {
+        return negation;
+    }
+
+    public void setNegation(boolean negation) {
+        this.negation = negation;
+    }
 }

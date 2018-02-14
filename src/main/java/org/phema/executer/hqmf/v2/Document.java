@@ -1,5 +1,6 @@
 package org.phema.executer.hqmf.v2;
 
+import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.hqmf.models.*;
 import org.phema.executer.hqmf.models.Coded;
 import org.w3c.dom.Element;
@@ -161,7 +162,9 @@ public class Document implements IDocument {
         for (int index = 0; index < extractedCriteria.getLength(); index++) {
             Node criterionNode = extractedCriteria.item(index);
             DataCriteria criterion = new DataCriteria(criterionNode, this.dataCriteriaReferences, this.occurrencesMap);
-            dataCriteria.add(criterion);
+            if (!dataCriteria.stream().anyMatch(x -> x.getId().equals(criterion.getId()))) {
+                dataCriteria.add(criterion);
+            }
         }
     }
 
@@ -334,6 +337,55 @@ public class Document implements IDocument {
                 .findFirst()
                 .orElse(null);
         return criteria;
+    }
+
+    /**
+     * Helper search function to find a source data criteria item by a given ID.
+     * @param id
+     * @return null if there is no source data criteria with that ID.  Otherwise, returns the first matching DataCriteria.
+     */
+    public DataCriteria getSourceDataCriteriaById(String id) {
+        if (this.sourceDataCriteria == null) {
+            return null;
+        }
+
+        Optional<DataCriteria> sourceCriterionResult = getSourceDataCriteria()
+                .stream()
+                .filter(x -> x.getId().equals(id))
+                .findFirst();
+        if (!sourceCriterionResult.isPresent()) {
+            return null;
+        }
+        return sourceCriterionResult.get();
+    }
+
+    /**
+     * Helper search function to find a data criteria item by a given ID.
+     * @param id
+     * @return null if there is no data criteria with that ID.  Otherwise, returns the first matching DataCriteria.
+     */
+    public DataCriteria getDataCriteriaById(String id) {
+        if (this.dataCriteria == null) {
+            return null;
+        }
+
+        Optional<DataCriteria> sourceCriterionResult = getDataCriteria()
+                .stream()
+                .filter(x -> x.getId().equals(id))
+                .findFirst();
+        if (!sourceCriterionResult.isPresent()) {
+            // As a fallback, check to see if there is a data criteria reference that matches.
+            Optional<Map.Entry<String, DataCriteria>> matchedEntry = getDataCriteriaReferences()
+                    .entrySet()
+                    .stream()
+                    .filter(x -> x.getKey().equals(id) || x.getValue().getOriginalId().equals(id))
+                    .findFirst();
+            if (matchedEntry.isPresent()) {
+                return matchedEntry.get().getValue();
+            }
+            return null;
+        }
+        return sourceCriterionResult.get();
     }
 
 

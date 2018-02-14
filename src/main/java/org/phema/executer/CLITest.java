@@ -20,8 +20,13 @@ import java.util.HashMap;
 public class CLITest {
     public static void main(String[] args) {
         try {
-            File xmlFile = new File("tests/resources/phenotype-packages/phema-simple/phema-simple.xml");
-            File configFile = new File("tests/resources/phenotype-packages/phema-simple/phema-simple.conf");
+//            File xmlFile = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.xml");
+//            File configFile = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.conf");
+            File xmlFile = new File("tests/resources/phenotype-packages/bph-dx-test/bph-dx-test.xml");
+            File configFile = new File("tests/resources/phenotype-packages/bph-dx-test/bph-dx-test.conf");
+
+            //File xmlFile = new File("tests/resources/phenotype-packages/age-test/age-test.xml");
+            //File configFile = new File("tests/resources/phenotype-packages/age-test/age-test.conf");
             Config config = ConfigFactory.parseFile(configFile);
             String hqmf = FileUtils.readFileToString(xmlFile);
             Parser parser = new Parser();

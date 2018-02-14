@@ -7,6 +7,7 @@ import org.phema.executer.interfaces.IHttpHelper;
 import org.phema.executer.models.DescriptiveResult;
 import org.phema.executer.models.i2b2.Concept;
 import org.phema.executer.models.i2b2.QueryMaster;
+import org.phema.executer.models.i2b2.TemporalDefinition;
 import org.phema.executer.util.XmlHelpers;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -204,6 +205,47 @@ public class CRCService extends I2b2ServiceBase {
 
             Thread.sleep(10000);
         }
+    }
+
+
+    public String createTemporalQueryXmlString(QueryMaster event1, QueryMaster event2, TemporalDefinition temporalDefinition) {
+        String template = 
+                "<subquery_constraint>\n" +
+                "    <first_query>\n" +
+                "      <query_id>" + temporalDefinition.getEvent1().getId() + "</query_id>\n" +
+                "      <join_column>" + temporalDefinition.getEvent1().getTiming() + "</join_column>\n" +
+                "      <aggregate_operator>" + temporalDefinition.getEvent1().getOccurrence() + "</aggregate_operator>\n" +
+                "    </first_query>\n" +
+                "    <operator>LESS</operator>\n" +
+                "    <second_query>\n" +
+                "      <query_id>" + temporalDefinition.getEvent2().getId() + "</query_id>\n" +
+                "      <join_column>" + temporalDefinition.getEvent2().getTiming() + "</join_column>\n" +
+                "      <aggregate_operator>" + temporalDefinition.getEvent2().getOccurrence() + "</aggregate_operator>\n" +
+                "    </second_query>\n" +
+                "    <span>\n" +
+                "      <operator>" + temporalDefinition.getOperator() + "</operator>\n" +
+                "      <span_value>" + temporalDefinition.getValue() + "</span_value>\n" +
+                "      <units>" + temporalDefinition.getUnits() + "</units>\n" +
+                "    </span>\n" +
+                "  </subquery_constraint>\n" +
+                "<subquery>\n" +
+                "    <query_id>Event 1</query_id>\n" +
+                "    <query_type>EVENT</query_type>\n" +
+                "    <query_name>Event 1</query_name>\n" +
+                "    <query_timing>SAMEINSTANCENUM</query_timing>\n" +
+                "    <specificity_scale>0</specificity_scale>\n" +
+                    createQueryPanelXmlString(1, true, false, 1, new ArrayList<QueryMaster>() {{ add(event1); }}) +
+                "</subquery>\n" +
+                "<subquery>\n" +
+                "    <query_id>Event 2</query_id>\n" +
+                "    <query_type>EVENT</query_type>\n" +
+                "    <query_name>Event 2</query_name>\n" +
+                "    <query_timing>SAMEINSTANCENUM</query_timing>\n" +
+                "    <specificity_scale>0</specificity_scale>\n" +
+                    createQueryPanelXmlString(1, true, false, 1, new ArrayList<QueryMaster>() {{ add(event2); }}) +
+                "</subquery>";
+
+        return template;
     }
 
     @Override

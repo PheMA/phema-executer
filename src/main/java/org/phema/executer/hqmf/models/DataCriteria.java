@@ -136,4 +136,24 @@ public class DataCriteria {
         put("TRANSFER_TO", "TRANSFER_TO");
         put("DST_TIME", "TRANSFER_TO_DATETIME");
     }};
+
+    public static HashMap<String, Setting> settingsMap = null;
+
+    public static HashMap<String, Setting> getSettingsMap() throws Exception {
+        if (settingsMap == null) {
+            settingsMap = HqmfSettingsHelper.readJsonFile("hqmf/hqmf_data_criteria.json");
+        }
+
+        return settingsMap;
+    }
+
+    public static Setting getSettingsForDefinition(String definition, String status) throws Exception {
+        HashMap<String, Setting> settingsMap = getSettingsMap();
+        String key = definition + ((status == null || status.length() == 0) ? "" : String.format("_%s", status));
+        Setting settings = settingsMap.getOrDefault(key, null);
+        if (settings == null || settings.isNotSupported()) {
+            throw new Exception(String.format("Data criteria is not supported - %s", key));
+        }
+        return settings;
+    }
 }

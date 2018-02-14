@@ -550,7 +550,7 @@ public class DataCriteria extends org.phema.executer.hqmf.models.DataCriteria {
     public String getCodeListId() {
         if (codeListId == null || codeListId.length() == 0) {
             try {
-                return XmlHelpers.getAttributeValue((Element)entry, xPath, String.format("%s/@valueSet", codeListXPath), "");
+                return XmlHelpers.getAttributeValue((Element)entry, xPath, String.format("%s/@valueSet", this.codeListXPath), "");
             } catch (XPathExpressionException e) {
                 e.printStackTrace();
                 return codeListId;

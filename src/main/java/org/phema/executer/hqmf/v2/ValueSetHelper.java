@@ -59,7 +59,7 @@ public class ValueSetHelper {
         put("2.16.840.1.113883.10.20.28.3.57", new ValueSetMapEntry("./*/cda:value", null));
         put("2.16.840.1.113883.10.20.28.3.58", new ValueSetMapEntry("./*/cda:value", null));
         put("2.16.840.1.113883.10.20.28.3.59", new ValueSetMapEntry("./*/cda:value", null));
-        put("2.16.840.1.113883.10.20.28.3.55", new ValueSetMapEntry("./*/cda:value", null));
+        put("2.16.840.1.113883.10.20.28.3.55", new ValueSetMapEntry("(./*/cda:value | ./*/cda:code)", null));
         put("2.16.840.1.113883.10.20.28.3.86", new ValueSetMapEntry("./*/cda:value", null));
         put("2.16.840.1.113883.10.20.28.3.61", new ValueSetMapEntry("./*/cda:value", null));
         put("2.16.840.1.113883.10.20.28.3.62", new ValueSetMapEntry("./*/cda:value", "./*/cda:outboundRelationship[@typeCode='REFR']//cda:code[@code='394617004']/../cda:value"));

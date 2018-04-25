@@ -77,14 +77,14 @@ public class CRCService extends I2b2ServiceBase {
         return builder.toString().trim();
     }
 
-    public String createQueryPanelXmlString(int panelStartNumber, boolean isAnd, boolean exclude, int itemOccurrence, ArrayList<QueryMaster> queries) {
+    public String createQueryPanelXmlString(int panelStartNumber, boolean isAnd, boolean exclude, int itemOccurrence, String panelTiming, ArrayList<QueryMaster> queries) {
         StringBuilder builder = new StringBuilder();
         if (isAnd) {
             int panelCounter = panelStartNumber;
             for (QueryMaster query : queries) {
                 builder.append("<panel>\n");
                 builder.append(String.format("  <panel_number>%d</panel_number>\n", panelCounter));
-                builder.append("  <panel_timing>ANY</panel_timing>\n");
+                builder.append(String.format("  <panel_timing>%s</panel_timing>\n", panelTiming));
                 builder.append("  <panel_accuracy_scale>100</panel_accuracy_scale>\n");
                 builder.append(String.format("  <invert>%d</invert>\n", (exclude ? 1 : 0)));
                 builder.append(String.format("<total_item_occurrences>%d</total_item_occurrences>\n", itemOccurrence));
@@ -96,7 +96,7 @@ public class CRCService extends I2b2ServiceBase {
         else {
             builder.append("<panel>\n");
             builder.append(String.format("  <panel_number>%d</panel_number>\n", panelStartNumber));
-            builder.append("  <panel_timing>ANY</panel_timing>\n");
+            builder.append(String.format("  <panel_timing>%s</panel_timing>\n", panelTiming));
             builder.append("  <panel_accuracy_scale>100</panel_accuracy_scale>\n");
             builder.append(String.format("  <invert>%d</invert>\n", (exclude ? 1 : 0)));
             builder.append(String.format("<total_item_occurrences>%d</total_item_occurrences>\n", itemOccurrence));
@@ -236,7 +236,7 @@ public class CRCService extends I2b2ServiceBase {
                 "    <query_name>Event 1</query_name>\n" +
                 "    <query_timing>SAMEINSTANCENUM</query_timing>\n" +
                 "    <specificity_scale>0</specificity_scale>\n" +
-                    createQueryPanelXmlString(1, true, false, 1, new ArrayList<QueryMaster>() {{ add(event1); }}) +
+                    createQueryPanelXmlString(1, true, false, 1, "SAMEINSTANCENUM", new ArrayList<QueryMaster>() {{ add(event1); }}) +
                 "</subquery>\n" +
                 "<subquery>\n" +
                 "    <query_id>Event 2</query_id>\n" +
@@ -244,7 +244,7 @@ public class CRCService extends I2b2ServiceBase {
                 "    <query_name>Event 2</query_name>\n" +
                 "    <query_timing>SAMEINSTANCENUM</query_timing>\n" +
                 "    <specificity_scale>0</specificity_scale>\n" +
-                    createQueryPanelXmlString(1, true, false, 1, new ArrayList<QueryMaster>() {{ add(event2); }}) +
+                    createQueryPanelXmlString(1, true, false, 1, "SAMEINSTANCENUM", new ArrayList<QueryMaster>() {{ add(event2); }}) +
                 "</subquery>";
 
         return template;

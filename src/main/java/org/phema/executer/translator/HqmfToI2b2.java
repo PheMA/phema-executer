@@ -145,7 +145,6 @@ public class HqmfToI2b2 {
         QueryMaster masterQuery = null;
         try {
             masterQuery = buildQueryFromPreconditions(crcService, hqmfDocument, precondition, true);
-            crcService.pollForQueryCompletion(masterQuery);
         } catch (PhemaUserException pue) {
             throw pue;  // Re-throw the user-facing exception as-is.
         } catch (Exception e) {
@@ -213,7 +212,8 @@ public class HqmfToI2b2 {
             // TODO: Counts (e.g., >=2 instances)
             // TODO: Exclusion (NOT)
             QueryMaster query = crcService.runQueryInstance(parentCondition.getId(), crcService.createQueryPanelXmlString(
-                    1, requireAll(parentCondition.getConjunction()), parentCondition.isNegation(), 1, queryItems), returnResults);
+                    1, requireAll(parentCondition.getConjunction()), parentCondition.isNegation(), 1, "SAMEINSTANCENUM", queryItems), returnResults);
+            crcService.pollForQueryCompletion(query);
             return query;
         }
 
@@ -261,6 +261,7 @@ public class HqmfToI2b2 {
                         temporalCriteriaQueryMap.get(linkedCriterion),
                         buildI2B2TemporalDefinition(temporalReference));
                 QueryMaster temporalQuery = crcService.runQueryInstance("Temporal Query", panel, false);
+                crcService.pollForQueryCompletion(temporalQuery);
                 criteriaQueryMap.putAll(temporalCriteriaQueryMap);
                 criteriaQueryMap.put(criterion, temporalQuery);
             }
@@ -278,6 +279,7 @@ public class HqmfToI2b2 {
                 ArrayList<Concept> concepts = conceptsResult.get().getValue();
                 String panel = crcService.createConceptPanelXmlString(1, false, false, 1, concepts);
                 QueryMaster dataCriteriaQuery = crcService.runQueryInstance(criterion.getId(), panel, false);
+                crcService.pollForQueryCompletion(dataCriteriaQuery);
                 criteriaQueryMap.put(criterion, dataCriteriaQuery);
             }
         }

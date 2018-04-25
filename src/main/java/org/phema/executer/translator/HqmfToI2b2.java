@@ -177,7 +177,8 @@ public class HqmfToI2b2 {
                 // the query entry from our cache.
                 Optional<Map.Entry<DataCriteria, QueryMaster>> searchResult = criteriaQueryMap.entrySet()
                         .stream()
-                        .filter(x -> x.getKey().getOriginalId().equals(precondition.getReference().getId()))
+                        .filter(x -> Objects.equals(x.getKey().getOriginalId(), precondition.getReference().getId())
+                        || Objects.equals(x.getKey().getId(), precondition.getReference().getId()))
                         .findFirst();
                 if (!searchResult.isPresent()) {
                     continue;
@@ -193,7 +194,7 @@ public class HqmfToI2b2 {
                 String sourceId = entry.getKey().getId();
                 Optional<Map.Entry<DataCriteria, QueryMaster>> temporalSearchResult = criteriaQueryMap.entrySet()
                         .stream()
-                        .filter(x -> x.getKey().getSourceDataCriteria().equals(sourceId) && !x.getKey().getId().equals(sourceId))
+                        .filter(x -> Objects.equals(x.getKey().getSourceDataCriteria(), sourceId) && !x.getKey().getId().equals(sourceId))
                         .findFirst();
                 if (!temporalSearchResult.isPresent()) {
                     continue;
@@ -202,6 +203,9 @@ public class HqmfToI2b2 {
                 queryItems.add(temporalSearchResult.get().getValue());
             }
         }
+
+        // Remove all null items, as a safeguard for future processing.
+        queryItems.removeAll(Collections.singleton(null));
 
         // Once we get a definition that is just QueryMaster entries, we need to create a new query
         // master based off of that.

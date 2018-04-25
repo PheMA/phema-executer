@@ -92,6 +92,16 @@ public class XmlHelpers {
         return textNode.getTextContent();
     }
 
+    public static String dumpDocumentToString(Document document) throws TransformerException {
+        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer = tf.newTransformer();
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+        StringWriter writer = new StringWriter();
+        transformer.transform(new DOMSource(document), new StreamResult(writer));
+        String output = writer.getBuffer().toString().replaceAll("\n|\r", "");
+        return output;
+    }
+
     // Derived from http://www.java2s.com/Code/Java/XML/ConvertNodeListToNodeArray.htm
     public static ArrayList<Node> convertNodeListToArray(NodeList list) {
         int length = list.getLength();

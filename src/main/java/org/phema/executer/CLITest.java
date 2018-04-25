@@ -20,10 +20,10 @@ import java.util.HashMap;
 public class CLITest {
     public static void main(String[] args) {
         try {
-//            File xmlFile = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.xml");
-//            File configFile = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.conf");
-            File xmlFile = new File("tests/resources/phenotype-packages/bph-dx-test/bph-dx-test.xml");
-            File configFile = new File("tests/resources/phenotype-packages/bph-dx-test/bph-dx-test.conf");
+            File xmlFile = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.xml");
+            File configFile = new File("tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.conf");
+            //File xmlFile = new File("tests/resources/phenotype-packages/bph-dx-test/bph-dx-test.xml");
+            //File configFile = new File("tests/resources/phenotype-packages/bph-dx-test/bph-dx-test.conf");
 
             //File xmlFile = new File("tests/resources/phenotype-packages/age-test/age-test.xml");
             //File configFile = new File("tests/resources/phenotype-packages/age-test/age-test.conf");
@@ -31,10 +31,13 @@ public class CLITest {
             String hqmf = FileUtils.readFileToString(xmlFile);
             Parser parser = new Parser();
             IDocument document = parser.parse(hqmf);
-            System.out.println(document);
+            //System.out.println(document);
 
+            long startTime = System.nanoTime();
             org.phema.executer.translator.HqmfToI2b2 translator = new org.phema.executer.translator.HqmfToI2b2();
             translator.translate(document, config);
+            long endTime = System.nanoTime();
+            System.out.println("Elapsed execution time in seconds: " + (endTime - startTime) / 1000000000.0);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -146,9 +146,11 @@ public class CRCService extends I2b2ServiceBase {
         message = replaceCommonMessagePlaceholders(message);
         message = message.replace("{{query_name}}", queryName);
         message = message.replace("{{panels}}", panelXml);
-        message = message.replace("{{result_type}}", (returnResults ? "<result_output priority_index=\"10\" name=\"patient_count_xml\"/>" : ""));
+        //message = message.replace("{{result_type}}", (returnResults ? "<result_output priority_index=\"10\" name=\"patient_count_xml\"/>" : ""));
+        message = message.replace("{{result_type}}", "<result_output priority_index=\"1\" name=\"patient_count_xml\"/>");
         Document document = getMessage();
         Document i2b2Result = httpHelper.postXml(new URI(getProjectManagementService().getCellUrl("CRC") + "request"), document);
+        String test = XmlHelpers.dumpDocumentToString(i2b2Result);
         XPath xPath = XPathFactory.newInstance().newXPath();
         NamespaceContext context = new UniversalNamespaceCache(i2b2Result, true, "");
         xPath.setNamespaceContext(context);

@@ -36,11 +36,17 @@ import java.util.stream.Collectors;
 public class HqmfToI2b2 extends Observable {
     private HashMap<DataCriteria, QueryMaster> criteriaQueryMap = null;
 
-    public boolean execute(File configFile, File hqmfFile) {
+    public boolean execute(File configFile) {
         try {
             updateActionStart("Loading the configuration settings for this phenotype");
             Config config = ConfigFactory.parseFile(configFile);
             updateActionEnd("Configuration settings have been loaded");
+
+            updateActionStart("Finding HQMF file path");
+            String hqmfFilePath = getFilePathRelativeToConfigFile(config.getObject("execution"), "phenotypeDefinition");
+            updateActionDetails(String.format("Using HQMF file located at %s", hqmfFilePath));
+            File hqmfFile = new File(hqmfFilePath);
+            updateActionEnd("Found HQMF file path");
 
             updateActionStart("Parsing the HQMF document");
             String hqmf = FileUtils.readFileToString(hqmfFile);
@@ -430,13 +436,14 @@ public class HqmfToI2b2 extends Observable {
         String path = config.get("path").unwrapped().toString();
         updateActionStart(String.format("Creating a value set repository from the file '%s'", path));
 
-        ConfigOrigin origin = config.origin();
-        URL configFilePath = origin.url();
-        File configFile = new File(configFilePath.getFile());
-        String baseDirectory = configFile.getParent();
-
-        updateActionDetails(String.format("Looking for the value sets file in the directory '%s'", baseDirectory));
-        String fullFilePath = (new File(baseDirectory, config.get("path").unwrapped().toString())).getAbsolutePath();
+//        ConfigOrigin origin = config.origin();
+//        URL configFilePath = origin.url();
+//        File configFile = new File(configFilePath.getFile());
+//        String baseDirectory = configFile.getParent();
+//
+//        updateActionDetails(String.format("Looking for the value sets file in the directory '%s'", baseDirectory));
+//        String fullFilePath = (new File(baseDirectory, path)).getAbsolutePath();
+        String fullFilePath = getFilePathRelativeToConfigFile(config, "path");
         updateActionDetails(String.format("Repository path set to '%s'", fullFilePath));
 
         FileValueSetRepository repository = new FileValueSetRepository();
@@ -444,6 +451,17 @@ public class HqmfToI2b2 extends Observable {
                 fullFilePath); }});
         updateActionEnd("Created the value set file repository");
         return repository;
+    }
+
+    private String getFilePathRelativeToConfigFile(ConfigObject config, String fileNameKey) {
+        ConfigOrigin origin = config.origin();
+        URL configFilePath = origin.url();
+        File configFile = new File(configFilePath.getFile());
+        String baseDirectory = configFile.getParent();
+
+        String path = config.get(fileNameKey).unwrapped().toString();
+        String fullFilePath = (new File(baseDirectory, path)).getAbsolutePath();
+        return fullFilePath;
     }
 
     /**

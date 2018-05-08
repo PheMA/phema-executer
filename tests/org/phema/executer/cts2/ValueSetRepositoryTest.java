@@ -20,6 +20,10 @@ class ValueSetRepositoryTest {
     class TestHttpHelper extends HttpHelper {
         public String nextResponse = "";
 
+        TestHttpHelper() {
+            super(false);
+        }
+
         public Document PostXml(URI uri, Document message) throws Exception {
             return XmlHelpers.loadXMLFromString(nextResponse);
         }

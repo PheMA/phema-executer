@@ -3,6 +3,10 @@ package org.phema.executer.translator;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigObject;
 import org.phema.executer.exception.PhemaUserException;
+import org.phema.executer.hqmf.v2.DataCriteria;
+import org.phema.executer.hqmf.v2.Range;
+import org.phema.executer.hqmf.v2.TemporalReference;
+import org.phema.executer.hqmf.v2.Value;
 import org.phema.executer.i2b2.OntologyService;
 import org.phema.executer.i2b2.ProjectManagementService;
 import org.phema.executer.models.i2b2.Concept;
@@ -13,9 +17,8 @@ import org.phema.executer.util.ConfigHelper;
 import org.phema.executer.valueSets.models.Member;
 import org.phema.executer.valueSets.models.ValueSet;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by Luke Rasmussen on 12/22/17.
@@ -27,6 +30,16 @@ public class ValueSetToI2b2Ontology {
     private ArrayList<I2b2ValueSetRule> valueSetRules;
     private ArrayList<I2b2OverrideRule> overrideRules;
     private OntologyService ontService;
+
+    private class BasecodeRuleMatch {
+        public String basecode;
+        public I2b2TerminologyRule rule;
+
+        public BasecodeRuleMatch(String basecode, I2b2TerminologyRule rule) {
+            this.basecode = basecode;
+            this.rule = rule;
+        }
+    }
 
     /**
      * Initialize the value set translator
@@ -48,25 +61,116 @@ public class ValueSetToI2b2Ontology {
         ArrayList<Member> members = valueSet.getMembers();
         ArrayList<Concept> concepts = new ArrayList<>();
         for (Member member : members) {
-            String basecode = translateValueSetMemberToBasecode(member);
-            concepts.addAll(this.ontService.getCodeInfo(basecode));
+            BasecodeRuleMatch basecodeRule = translateValueSetMemberToBasecode(member);
+            concepts.addAll(filterFoundConcepts(basecodeRule));
+        }
+
+        return distinctConceptList(concepts);
+    }
+
+    public ArrayList<Concept> translateAgeRequirement(DataCriteria criterion) throws PhemaUserException {
+        ArrayList<Concept> ageConcepts = new ArrayList<>();
+
+        if (!Objects.equals(criterion.getDefinition(), "patient_characteristic_birthdate")) {
+            throw new PhemaUserException("A non-patient age criteria was treated as an age requirement.  This may be an internal error within the PhEMA Executer, or may be caused by an error in your HQMF file.");
+        }
+
+        TemporalReference temporalReference = criterion.getTemporalReferences().get(0);
+        Range range = temporalReference.getRange();
+        Value lowRange = null;
+        Value highRange = null;
+        if (range.getLow() != null && range.getLow().getClass().equals(Value.class)) {
+            lowRange = (Value)range.getLow();
+        }
+        if (range.getHigh() != null && range.getHigh().getClass().equals(Value.class)) {
+            highRange = (Value)range.getHigh();
+        }
+
+        // TODO: Handle more than just years
+        if (lowRange != null && !lowRange.getUnit().equals("a")) {
+            throw new PhemaUserException("Currently the PhEMA Executer only supports ages in years.");
+        }
+        if (highRange != null && !highRange.getUnit().equals("a")) {
+            throw new PhemaUserException("Currently the PhEMA Executer only supports ages in years.");
+        }
+
+        int lowerBound = (lowRange != null ? Integer.parseInt(lowRange.getValue()) : 0);
+        int upperBound = (highRange != null ? Integer.parseInt(highRange.getValue()) : 89);  // Going for HIPAA compliance here by default
+
+        // Do some quick sanity checks on the data
+        if (lowerBound > upperBound) {
+            throw new PhemaUserException(String.format("There is an error within your HQMF document.  We expect the lower bound (%d) to be less than or equal to the upper bound (%d) for an age requirement, but this is not the case.  Please contact the original phenotype author that generated the HQMF document.",
+                    lowerBound, upperBound));
+        }
+
+        for (int counter = lowerBound; counter <= upperBound; counter++) {
+            Member temp = new Member();
+            temp.setCodeSystem("Age");
+            temp.setCode(Integer.toString(counter));
+            BasecodeRuleMatch basecodeRule = translateValueSetMemberToBasecode(temp);
+            ageConcepts.addAll(filterFoundConcepts(basecodeRule));
+        }
+
+        return distinctConceptList(ageConcepts);
+    }
+
+    private ArrayList<Concept> distinctConceptList(ArrayList<Concept> concepts) {
+        ArrayList<Concept> distinctConcepts = new ArrayList<>();
+        if (concepts == null) {
+            return distinctConcepts;
+        }
+
+        HashSet<String> baseCodes = new HashSet<>();
+        for (Concept concept : concepts) {
+            if (baseCodes.contains(concept.getBaseCode())) {
+                continue;
+            }
+
+            distinctConcepts.add(concept);
+            baseCodes.add(concept.getBaseCode());
+        }
+
+        return distinctConcepts;
+    }
+
+    private ArrayList<Concept> filterFoundConcepts(BasecodeRuleMatch basecodeRule) throws PhemaUserException {
+        String basecode = basecodeRule.basecode;
+        ArrayList<Concept> concepts = new ArrayList<>();
+        ArrayList<Concept> foundConcepts = this.ontService.getCodeInfo(basecodeRule.basecode);
+        if (foundConcepts != null && foundConcepts.size() > 0) {
+            // If we have a mapped rule that includes a setting for the ontology path that we should restrict to, make
+            // sure each of the entries we have found is in that path (and remove the ones that aren't)
+            if (basecodeRule.rule != null && basecodeRule.rule.getRestrictToOntologyPath() != null) {
+                String restrictToPath = basecodeRule.rule.getRestrictToOntologyPath();
+                concepts.addAll(foundConcepts.stream()
+                        .filter(x -> x.getKey().contains(restrictToPath))
+                        .collect(Collectors.toList()));
+            }
+            else {
+                concepts.addAll(foundConcepts);
+            }
         }
 
         return concepts;
     }
 
-    private String translateValueSetMemberToBasecode(Member member) {
+    /**
+     * @param member
+     * @return
+     */
+    private BasecodeRuleMatch translateValueSetMemberToBasecode(Member member) {
         // Default is codesystem + : + code
         String terminology = member.getCodeSystem();
         String delimiter = DEFAULT_DELIMITER;
         String term = member.getCode();
 
         // First apply any terminology rules that apply to this member.
+        I2b2TerminologyRule rule = null;
         if (this.terminologyRules != null) {
             Optional<I2b2TerminologyRule> ruleResult = this.terminologyRules.stream().filter(x -> x.getSourceTerminologyName().equals(member.getCodeSystem())).findFirst();
             if (ruleResult.isPresent()) {
                 // Check to see if the appropriate parts of the rule are defined.  If not, use the defaults.
-                I2b2TerminologyRule rule = ruleResult.get();
+                rule = ruleResult.get();
                 String ruleTerminology = rule.getDestinationTerminologyPrefix();
                 if (ruleTerminology != null) {
                     terminology = ruleTerminology;
@@ -79,7 +183,7 @@ public class ValueSetToI2b2Ontology {
             }
         }
 
-        return String.format("%s%s%s", terminology, delimiter, term);
+        return new BasecodeRuleMatch(String.format("%s%s%s", terminology, delimiter, term), rule);
     }
 
     private void initializeTerminologyRules(Config config) throws Exception {
@@ -103,8 +207,9 @@ public class ValueSetToI2b2Ontology {
             String destinationTerminologyDelimiter = ConfigHelper.getStringValue(ruleObject, "destinationTerminology.delimiter", DEFAULT_DELIMITER);
             String destinationCodeMatch = ConfigHelper.getStringValue(ruleObject, "destinationTerminology.codeReplace.match", null);
             String destinationCodeReplace = ConfigHelper.getStringValue(ruleObject, "destinationTerminology.codeReplace.replaceWith", null);
+            String restrictToOntologyPath = ConfigHelper.getStringValue(ruleObject, "destinationTerminology.restrictToOntologyPath", null);
             terminologyRules.add(new I2b2TerminologyRule(sourceTerminologyName, destinationTerminologyPrefix, destinationTerminologyDelimiter,
-                    destinationCodeMatch, destinationCodeReplace));
+                    destinationCodeMatch, destinationCodeReplace, restrictToOntologyPath));
         }
     }
 

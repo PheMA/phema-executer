@@ -2,7 +2,6 @@ package org.phema.executer.i2b2;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.phema.executer.UniversalNamespaceCache;
-import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.interfaces.IHttpHelper;
 import org.phema.executer.models.DescriptiveResult;
 import org.phema.executer.models.i2b2.Concept;
@@ -19,7 +18,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 
 /**
@@ -41,19 +39,23 @@ public class CRCService extends I2b2ServiceBase {
 
     private ProjectManagementService pmService;
 
+    private final int MAX_POLLING_WAIT_SECONDS = 120;
+
+
     public CRCService(ProjectManagementService pmService, I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper) {
         super(configuration, httpHelper);
         this.pmService = pmService;
     }
 
-    public String createConceptPanelXmlString(int panelStartNumber, boolean isAnd, boolean exclude, int itemOccurrence, ArrayList<Concept> concepts) {
+    public String createConceptPanelXmlString(int panelStartNumber, boolean isAnd, boolean exclude, int itemOccurrence, String panelTiming, ArrayList<Concept> concepts) {
         StringBuilder builder = new StringBuilder();
         if (isAnd) {
             int panelCounter = panelStartNumber;
             for (Concept concept : concepts) {
                 builder.append("<panel>\n");
                 builder.append(String.format("  <panel_number>%d</panel_number>\n", panelCounter));
-                builder.append("  <panel_timing>ANY</panel_timing>\n");
+                //builder.append("  <panel_timing>ANY</panel_timing>\n");
+                builder.append(String.format("  <panel_timing>%s</panel_timing>\n", panelTiming));
                 builder.append("  <panel_accuracy_scale>100</panel_accuracy_scale>\n");
                 builder.append(String.format("  <invert>%d</invert>\n", (exclude ? 1 : 0)));
                 builder.append(String.format("  <total_item_occurrences>%d</total_item_occurrences>\n", itemOccurrence));
@@ -65,7 +67,8 @@ public class CRCService extends I2b2ServiceBase {
         else {
             builder.append("<panel>\n");
             builder.append(String.format("  <panel_number>%d</panel_number>\n", panelStartNumber));
-            builder.append("  <panel_timing>ANY</panel_timing>\n");
+            //builder.append("  <panel_timing>ANY</panel_timing>\n");
+            builder.append(String.format("  <panel_timing>%s</panel_timing>\n", panelTiming));
             builder.append("  <panel_accuracy_scale>100</panel_accuracy_scale>\n");
             builder.append(String.format("  <invert>%d</invert>\n", (exclude ? 1 : 0)));
             builder.append(String.format("  <total_item_occurrences>%d</total_item_occurrences>\n", itemOccurrence));
@@ -142,13 +145,19 @@ public class CRCService extends I2b2ServiceBase {
     }
 
     public QueryMaster runQueryInstance(String queryName, String panelXml, boolean returnResults) throws Exception {
+        return runQueryInstance(queryName, panelXml, "ANY", returnResults);
+    }
+
+    public QueryMaster runQueryInstance(String queryName, String panelXml, String queryTiming, boolean returnResults) throws Exception {
         loadRequest("i2b2_runQueryInstance");
         message = replaceCommonMessagePlaceholders(message);
         message = message.replace("{{query_name}}", queryName);
+        message = message.replace("{{query_timing}}", queryTiming);
         message = message.replace("{{panels}}", panelXml);
         //message = message.replace("{{result_type}}", (returnResults ? "<result_output priority_index=\"10\" name=\"patient_count_xml\"/>" : ""));
         message = message.replace("{{result_type}}", "<result_output priority_index=\"1\" name=\"patient_count_xml\"/>");
         Document document = getMessage();
+        updateProgress("Preparing to run query - this may take some time as we wait for a response from i2b2.");
         Document i2b2Result = httpHelper.postXml(new URI(getProjectManagementService().getCellUrl("CRC") + "request"), document);
         String test = XmlHelpers.dumpDocumentToString(i2b2Result);
         XPath xPath = XPathFactory.newInstance().newXPath();
@@ -177,11 +186,14 @@ public class CRCService extends I2b2ServiceBase {
      * @param masterQuery The query definition that is to be monitored.
      */
     public DescriptiveResult pollForQueryCompletion(QueryMaster masterQuery) throws Exception {
+        updateProgress("Asking i2b2 if the query execution is complete yet");
         loadRequest("i2b2_getQueryStatus");
         message = replaceCommonMessagePlaceholders(message);
         message = message.replace("{{query_master_id}}", Integer.toString(masterQuery.getId()));
 
         Document document = getMessage();
+        int iteration = 0;
+        int secondsWait = 10;
         while(true) {
             Document i2b2Result = httpHelper.postXml(new URI(getProjectManagementService().getCellUrl("CRC") + "request"), document);
             XPath xPath = XPathFactory.newInstance().newXPath();
@@ -195,6 +207,7 @@ public class CRCService extends I2b2ServiceBase {
 
             Element queryInstanceElement = (Element) xPath.evaluate("//message_body/ns4:response/query_instance", documentElement, XPathConstants.NODE);
             String batchModeResult = XmlHelpers.getChildContent(queryInstanceElement, "batch_mode", "ERROR");
+            updateProgress(String.format("Query execution status - %s", batchModeResult));
             switch (batchModeResult) {
                 case ERROR:
                     return new DescriptiveResult(false, "i2b2 reported an error when trying to run your phenotype definition.");
@@ -205,7 +218,11 @@ public class CRCService extends I2b2ServiceBase {
                     break;
             }
 
-            Thread.sleep(10000);
+            iteration++;
+            secondsWait = Math.min(MAX_POLLING_WAIT_SECONDS, (iteration * 10));
+            updateProgress(String.format("This was iteration %d checking if the query is done running yet.  We will wait %d seconds before asking again.",
+                    iteration, secondsWait));
+            Thread.sleep(secondsWait * 1000);
         }
     }
 

@@ -11,8 +11,6 @@ import java.util.Observer;
 public class ConsoleProgressObserver implements Observer {
     @Override
     public void update(Observable observable, Object arg) {
-        if (observable.getClass().equals(HqmfToI2b2.class)) {
-            System.out.println((String)arg);
-        }
+        System.out.println((String)arg);
     }
 }

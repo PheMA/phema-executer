@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigOrigin;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.phema.executer.ConsoleProgressObserver;
 import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.hqmf.IDocument;
 import org.phema.executer.hqmf.Parser;
@@ -24,7 +25,6 @@ import org.phema.executer.util.HttpHelper;
 import org.phema.executer.valueSets.FileValueSetRepository;
 import org.phema.executer.valueSets.models.ValueSet;
 
-import javax.xml.xpath.XPathExpressionException;
 import java.io.File;
 import java.net.URL;
 import java.util.*;
@@ -36,8 +36,23 @@ import java.util.stream.Collectors;
 public class HqmfToI2b2 extends Observable {
     private HashMap<DataCriteria, QueryMaster> criteriaQueryMap = null;
 
+    public Observer getLogger() {
+        return logger;
+    }
+
+    public void setLogger(Observer logger) {
+        this.logger = logger;
+    }
+
+    private Observer logger = null;
+
     public boolean execute(File configFile) {
         try {
+            if (logger != null) {
+                deleteObservers();
+                addObserver(getLogger());
+            }
+
             updateActionStart("Loading the configuration settings for this phenotype");
             Config config = ConfigFactory.parseFile(configFile);
             updateActionEnd("Configuration settings have been loaded");
@@ -58,10 +73,12 @@ public class HqmfToI2b2 extends Observable {
         catch (PhemaUserException pue) {
             updateProgress("ERROR - There was an error during execution");
             updateProgress(pue.getMessage());
+            pue.printStackTrace();
             return false;
         }
         catch (Exception exc) {
             updateProgress("ERROR - There was an unhandled error during execution.  Please report this to the PhEMA team.");
+            exc.printStackTrace();
             return false;
         }
 
@@ -97,17 +114,33 @@ public class HqmfToI2b2 extends Observable {
         }
         updateActionEnd("i2b2 configuration details have been loaded.");
 
+        boolean trustAllSsl = false;
+        if (config.hasPath("execution.trustAllSsl")) {
+            trustAllSsl = config.getBoolean("execution.trustAllSsl");
+        }
+        else {
+            trustAllSsl = false;
+            updateProgress("No value specified for trusting SSL certificates - defaulting to false");
+        }
+
+        HttpHelper httpHelper = new HttpHelper(trustAllSsl);
+        if (trustAllSsl) {
+            updateProgress("Implicitly trusting all certificates used in SSL connections");
+        } else {
+            updateProgress("Using Java certificate store for SSL trust resolution.  If you receive SSL connection errors, you may need to import additional certificates into the Java certificate store.");
+        }
+
         // Create an instance of the project management service, and ensure that we are
         // properly authenticated
         updateActionStart("Logging into the i2b2 Project Manager");
-        ProjectManagementService pmService = new ProjectManagementService(configuration, new HttpHelper());
+        ProjectManagementService pmService = new ProjectManagementService(configuration, httpHelper);
         result = pmService.login();
         if (!result.isSuccess()) {
             throw new PhemaUserException(result);
         }
         updateActionEnd("Successfully connected to i2b2");
 
-        OntologyService ontService = new OntologyService(pmService, configuration, new HttpHelper());
+        OntologyService ontService = new OntologyService(pmService, configuration, httpHelper);
 
         // Build the full list of value set repositories that we are configured to use
         // for this phenotype.
@@ -182,13 +215,14 @@ public class HqmfToI2b2 extends Observable {
         }
         updateActionEnd("Finished mapping value set codes to i2b2 ontology");
 
-        CRCService crcService = new CRCService(pmService, configuration, new HttpHelper());
+        CRCService crcService = new CRCService(pmService, configuration, httpHelper);
+        crcService.addObserver(getLogger());
 
         // Create query definitions for all of the underlying source data criteria.  Once saved, these will be combined
         // into a larger, final query.
         try {
             updateActionStart("Creating data criteria queries");
-            criteriaQueryMap = defineDataCriteriaQueries(hqmfDocument, hqmfDocument.getDataCriteria(), valueSetConceptMap, crcService, 1);
+            criteriaQueryMap = defineDataCriteriaQueries(hqmfDocument, hqmfDocument.getDataCriteria(), valueSetConceptMap, crcService, valueSetTranslator, 1);
             updateActionEnd("Finished creating data criteria queries");
         } catch (PhemaUserException pue) {
             throw pue;  // Re-throw the user-facing exception as-is.
@@ -315,7 +349,7 @@ public class HqmfToI2b2 extends Observable {
             // TODO: Counts (e.g., >=2 instances)
             // TODO: Exclusion (NOT)
             QueryMaster query = crcService.runQueryInstance(parentCondition.getId(), crcService.createQueryPanelXmlString(
-                    1, requireAll(parentCondition.getConjunction()), parentCondition.isNegation(), 1, "SAMEINSTANCENUM", queryItems), returnResults);
+                    1, requireAll(parentCondition.getConjunction()), parentCondition.isNegation(), 1, "ANY", queryItems), returnResults);
             crcService.pollForQueryCompletion(query);
             return query;
         }
@@ -325,14 +359,10 @@ public class HqmfToI2b2 extends Observable {
 
     private HashMap<DataCriteria, QueryMaster> defineDataCriteriaQueries(
             Document hqmfDocument, ArrayList<DataCriteria> dataCriteria, HashMap<ValueSet, ArrayList<Concept>> valueSetConceptMap,
-            CRCService crcService, int nestedLevel) throws Exception {
+            CRCService crcService, ValueSetToI2b2Ontology valueSetTranslator, int nestedLevel) throws Exception {
         updateActionDetails(String.format("Processing %d data criteria", dataCriteria.size()), nestedLevel);
         HashMap<DataCriteria, QueryMaster> criteriaQueryMap = new HashMap<>();
         for (DataCriteria criterion : dataCriteria) {
-            if (Objects.equals(criterion.getDefinition(), "patient_characteristic_birthdate")) {
-                continue;
-            }
-
             // If we have temporal relationships in the query, we need to handle building them a little differently.
             if (criterion.getTemporalReferences() != null && criterion.getTemporalReferences().size() > 0) {
                 updateActionDetails("Creating criteria with a temporal relationship", nestedLevel);
@@ -341,43 +371,74 @@ public class HqmfToI2b2 extends Observable {
                     throw new PhemaUserException("Currently the PhEMA Executer is only able to handle a single temporal relationship between data criteria.");
                 }
 
-                // The criterion that we are on is the anchor event to be used by i2b2.  We need to define this
-                // criterion without the temporal relationship (just the basic data query).
-                updateActionDetails(String.format("Locating anchor event for temporal relationship: %s", criterion.getSourceDataCriteria()), nestedLevel);
-                DataCriteria sourceCriterion = hqmfDocument.getSourceDataCriteriaById(criterion.getSourceDataCriteria());
-                if (sourceCriterion == null) {
-                    throw new PhemaUserException(String.format("There appears to be an issue with this HQMF document.  We expect every data criteria to have a matching source data criteria, however a source data criteria is not found for the identifier %s.  If the HQMF document was generated by the PhEMA tool, please report this issue to the PhEMA development team for assistance.", criterion.getId()));
-                }
-
                 // Now get the associated item and build a basic data criteria for it.
                 TemporalReference temporalReference = criterion.getTemporalReferences().get(0);
-                String linkedItemId = temporalReference.getReference().getId();
-                updateActionDetails(String.format("Locating linked event for temporal relationship: %s", linkedItemId), nestedLevel);
-                DataCriteria linkedCriterion = hqmfDocument.getDataCriteriaById(linkedItemId);
-                if (linkedCriterion == null) {
-                    throw new PhemaUserException(String.format("There appears to be an issue with this HQMF document.  We expect every data criteria to have a matching source data criteria, however a source data criteria is not found for the identifier %s.  If the HQMF document was generated by the PhEMA tool, please report this issue to the PhEMA development team for assistance.", linkedItemId));
-                }
-
-                // Send our basic data criterion back to this method to get the actual data query references built.  Then
-                // we will build the temporal relationship part of the query.
                 HashMap<DataCriteria, QueryMaster> temporalCriteriaQueryMap = new HashMap<>();
-                temporalCriteriaQueryMap.putAll(defineDataCriteriaQueries(hqmfDocument,
-                        new ArrayList<DataCriteria>() {{ add(sourceCriterion); add(linkedCriterion); }},
-                        valueSetConceptMap, crcService, (nestedLevel + 1)));
 
-                // Now build the temporal query structure used by i2b2.
-                String panel = crcService.createTemporalQueryXmlString(temporalCriteriaQueryMap.get(sourceCriterion),
-                        temporalCriteriaQueryMap.get(linkedCriterion),
-                        buildI2B2TemporalDefinition(temporalReference));
-                updateActionDetails("Creating the temporal query in i2b2...", nestedLevel);
-                QueryMaster temporalQuery = crcService.runQueryInstance("Temporal Query", panel, false);
-                crcService.pollForQueryCompletion(temporalQuery);
-                criteriaQueryMap.putAll(temporalCriteriaQueryMap);
-                criteriaQueryMap.put(criterion, temporalQuery);
-                updateActionDetails("...Created the temporal query in i2b2", nestedLevel);
+                // Patient birthdate, when related to something else, can be expressed in i2b2 as a
+                // temporal query.  We will relate it in the same visit to the other event.
+                if (Objects.equals(criterion.getDefinition(), "patient_characteristic_birthdate")) {
+                    updateActionDetails("Performing some special processing for patient age");
+                    ArrayList<Concept> concepts = valueSetTranslator.translateAgeRequirement(criterion);
+
+                    String linkedItemId = temporalReference.getReference().getId();
+                    updateActionDetails(String.format("Locating linked event for temporal relationship: %s", linkedItemId), nestedLevel);
+                    DataCriteria linkedCriterion = hqmfDocument.getDataCriteriaById(linkedItemId);
+                    if (linkedCriterion == null) {
+                        throw new PhemaUserException(String.format("There appears to be an issue with this HQMF document.  We expect every data criteria to have a matching source data criteria, however a source data criteria is not found for the identifier %s.  If the HQMF document was generated by the PhEMA tool, please report this issue to the PhEMA development team for assistance.", linkedItemId));
+                    }
+
+                    String agePanelString = crcService.createConceptPanelXmlString(1, false, false, 1, "SAMEVISIT", concepts);
+                    temporalCriteriaQueryMap.putAll(defineDataCriteriaQueries(hqmfDocument,
+                            new ArrayList<DataCriteria>() {{ add(linkedCriterion); }},
+                            valueSetConceptMap, crcService, valueSetTranslator, (nestedLevel + 1)));
+                    String relatedPanelString = crcService.createQueryPanelXmlString(2, false, false, 1, "SAMEVISIT",
+                            new ArrayList<QueryMaster>() {{ add(temporalCriteriaQueryMap.get(linkedCriterion)); }});
+
+                    updateActionDetails("Creating the age temporal query in i2b2...", nestedLevel);
+                    QueryMaster temporalQuery = crcService.runQueryInstance("Age Temporal Query", agePanelString + "\n" + relatedPanelString, "SAMEVISIT", false);
+                    //crcService.pollForQueryCompletion(temporalQuery);
+                    criteriaQueryMap.putAll(temporalCriteriaQueryMap);
+                    criteriaQueryMap.put(criterion, temporalQuery);
+                    updateActionDetails("...Created the age temporal query in i2b2", nestedLevel);
+                }
+                else {
+                    // The criterion that we are on is the anchor event to be used by i2b2.  We need to define this
+                    // criterion without the temporal relationship (just the basic data query).
+                    updateActionDetails(String.format("Locating anchor event for temporal relationship: %s", criterion.getSourceDataCriteria()), nestedLevel);
+                    DataCriteria sourceCriterion = hqmfDocument.getSourceDataCriteriaById(criterion.getSourceDataCriteria());
+                    if (sourceCriterion == null) {
+                        throw new PhemaUserException(String.format("There appears to be an issue with this HQMF document.  We expect every data criteria to have a matching source data criteria, however a source data criteria is not found for the identifier %s.  If the HQMF document was generated by the PhEMA tool, please report this issue to the PhEMA development team for assistance.", criterion.getId()));
+                    }
+
+                    String linkedItemId = temporalReference.getReference().getId();
+                    updateActionDetails(String.format("Locating linked event for temporal relationship: %s", linkedItemId), nestedLevel);
+                    DataCriteria linkedCriterion = hqmfDocument.getDataCriteriaById(linkedItemId);
+                    if (linkedCriterion == null) {
+                        throw new PhemaUserException(String.format("There appears to be an issue with this HQMF document.  We expect every data criteria to have a matching source data criteria, however a source data criteria is not found for the identifier %s.  If the HQMF document was generated by the PhEMA tool, please report this issue to the PhEMA development team for assistance.", linkedItemId));
+                    }
+
+                    // Send our basic data criterion back to this method to get the actual data query references built.  Then
+                    // we will build the temporal relationship part of the query.
+                    temporalCriteriaQueryMap.putAll(defineDataCriteriaQueries(hqmfDocument,
+                            new ArrayList<DataCriteria>() {{ add(sourceCriterion); add(linkedCriterion); }},
+                            valueSetConceptMap, crcService, valueSetTranslator, (nestedLevel + 1)));
+
+                    // Now build the temporal query structure used by i2b2.
+                    String panel = crcService.createTemporalQueryXmlString(temporalCriteriaQueryMap.get(sourceCriterion),
+                            temporalCriteriaQueryMap.get(linkedCriterion),
+                            buildI2B2TemporalDefinition(temporalReference));
+                    updateActionDetails("Creating the temporal query in i2b2...", nestedLevel);
+                    QueryMaster temporalQuery = crcService.runQueryInstance("Temporal Query", panel, false);
+                    //crcService.pollForQueryCompletion(temporalQuery);
+                    criteriaQueryMap.putAll(temporalCriteriaQueryMap);
+                    criteriaQueryMap.put(criterion, temporalQuery);
+                    updateActionDetails("...Created the temporal query in i2b2", nestedLevel);
+                }
             }
             else {
                 updateActionDetails("Locating the i2b2 ontology terms mapped to the value set for this criterion", nestedLevel);
+
                 String valueSetOid = criterion.getCodeListId();
                 Optional<Map.Entry<ValueSet, ArrayList<Concept>>> conceptsResult = valueSetConceptMap.entrySet().stream()
                         .filter(x -> x.getKey().getOid().equals(valueSetOid))
@@ -389,10 +450,10 @@ public class HqmfToI2b2 extends Observable {
                 }
 
                 ArrayList<Concept> concepts = conceptsResult.get().getValue();
-                String panel = crcService.createConceptPanelXmlString(1, false, false, 1, concepts);
+                String panel = crcService.createConceptPanelXmlString(1, false, false, 1, "ANY", concepts);
                 updateActionDetails(String.format("Creating the criterion in i2b2...", criterion.getId()), nestedLevel);
                 QueryMaster dataCriteriaQuery = crcService.runQueryInstance(criterion.getId(), panel, false);
-                crcService.pollForQueryCompletion(dataCriteriaQuery);
+                //crcService.pollForQueryCompletion(dataCriteriaQuery);
                 criteriaQueryMap.put(criterion, dataCriteriaQuery);
                 updateActionDetails("...Saved the criterion definition in i2b2");
             }

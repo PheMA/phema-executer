@@ -19,7 +19,7 @@ import java.util.HashMap;
 public class ExtractValueSets {
     public static void main(String[] args) {
         try {
-            ValueSetRepository repository = new ValueSetRepository(new HttpHelper());
+            ValueSetRepository repository = new ValueSetRepository(new HttpHelper(true));
             HashMap<String, String> parameters = new HashMap<String, String>();
             parameters.put(ValueSetRepository.Parameters.BaseUri, "http://172.16.51.130:8080/value-sets/");
             repository.initialize(parameters);

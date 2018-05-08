@@ -9,17 +9,19 @@ public class I2b2TerminologyRule {
     private String destinationTerminologyDelimiter;
     private String destinationCodeMatch;
     private String destinationCodeReplace;
+    private String restrictToOntologyPath;
 
     public I2b2TerminologyRule() {
     }
 
     public I2b2TerminologyRule(String sourceTerminologyName, String destinationTerminologyPrefix, String destinationTerminologyDelimiter,
-                               String destinationCodeMatch, String destinationCodeReplace) {
+                               String destinationCodeMatch, String destinationCodeReplace, String restrictToOntologyPath) {
         this.sourceTerminologyName = sourceTerminologyName;
         this.destinationTerminologyPrefix = destinationTerminologyPrefix;
         this.destinationTerminologyDelimiter = destinationTerminologyDelimiter;
         this.destinationCodeMatch = destinationCodeMatch;
         this.destinationCodeReplace = destinationCodeReplace;
+        this.restrictToOntologyPath = restrictToOntologyPath;
     }
 
     public String getSourceTerminologyName() {
@@ -62,4 +64,11 @@ public class I2b2TerminologyRule {
         this.destinationCodeReplace = destinationCodeReplace;
     }
 
+    public String getRestrictToOntologyPath() {
+        return restrictToOntologyPath;
+    }
+
+    public void setRestrictToOntologyPath(String restrictToOntologyPath) {
+        this.restrictToOntologyPath = restrictToOntologyPath;
+    }
 }

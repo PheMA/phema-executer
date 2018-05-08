@@ -48,7 +48,7 @@
         <ns4:request xsi:type="ns4:query_definition_requestType" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <query_definition>
                 <query_name>{{query_name}}</query_name>
-                <query_timing>ANY</query_timing>
+                <query_timing>{{query_timing}}</query_timing>
                 <specificity_scale>0</specificity_scale>
                 {{panels}}
             </query_definition>

@@ -314,7 +314,7 @@
 
                         <criteriaReference moodCode="EVN" classCode="OBS">
                             <id root="2.16.840.1.113883.3.100.1"
-                                extension="Patient_Characteristic__Clinical_Trial_Participant_Biobank_specimens_available_for_research_17"/>
+                                extension="Diagnosis__Active_Benign_Prostatetic_Hyperplasia_81"/>
                         </criteriaReference>
 
                     </temporallyRelatedInformation>
@@ -788,7 +788,7 @@
 
                         <criteriaReference moodCode="EVN" classCode="OBS">
                             <id root="2.16.840.1.113883.3.100.1"
-                                extension="Patient_Characteristic__Clinical_Trial_Participant_Biobank_specimens_available_for_research_17"/>
+                                extension="Diagnosis__Active_Benign_Prostatetic_Hyperplasia_81"/>
                         </criteriaReference>
 
                     </temporallyRelatedInformation>

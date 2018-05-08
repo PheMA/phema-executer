@@ -34,7 +34,7 @@ public class Runner {
 
             long startTime = System.nanoTime();
             org.phema.executer.translator.HqmfToI2b2 translator = new org.phema.executer.translator.HqmfToI2b2();
-            translator.addObserver(consoleLogger);
+            translator.setLogger(consoleLogger);
             translator.execute(configFile);
             long endTime = System.nanoTime();
             System.out.println("Elapsed execution time in seconds: " + (endTime - startTime) / 1000000000.0);

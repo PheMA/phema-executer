@@ -132,11 +132,6 @@ The following is an example of a configuration file which includes i2b2 mapping 
     // Can be 'i2b2' or 'ohdsi'
     engine = "i2b2"
 
-    umls {
-        login = ""
-        password = ""
-    }
-
     valueSets = [
       { type = "File", path = "phema-bph-use-case.csv", format = "CSV" }
     ]

@@ -350,7 +350,13 @@ public class HqmfToI2b2 extends Observable {
             // TODO: Exclusion (NOT)
             QueryMaster query = crcService.runQueryInstance(parentCondition.getId(), crcService.createQueryPanelXmlString(
                     1, requireAll(parentCondition.getConjunction()), parentCondition.isNegation(), 1, "ANY", queryItems), returnResults);
-            crcService.pollForQueryCompletion(query);
+            if (nestedLevel == 1) {
+                updateActionDetails("Running the top-level query - we will poll for this query to complete");
+                DescriptiveResult result = crcService.pollForQueryCompletion(query);
+                if (!result.isSuccess()) {
+                    updateActionDetails(String.format("Polling for query completion failed - %s", String.join("\r\n", result.getDescriptions())));
+                }
+            }
             return query;
         }
 

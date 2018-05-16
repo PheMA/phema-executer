@@ -32,7 +32,9 @@ Example:
 ## Configuration
 The Executer uses Typesafe, (specifically [HOCON](https://github.com/lightbend/config#using-hocon-the-json-superset)) for specifying configuration parameters.
 
-An example i2b2 configuration file is as follows:
+An example i2b2 configuration file is as follows.  Additional information about ontology mapping in i2b2 can be found
+[in a separate article](i2b2TerminologyMapping.md).
+
 ```
 execution {
   // Path to the HQMF XML document, relative to the configuration file

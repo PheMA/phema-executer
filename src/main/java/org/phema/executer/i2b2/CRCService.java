@@ -156,7 +156,7 @@ public class CRCService extends I2b2ServiceBase {
         message = message.replace("{{panels}}", panelXml);
         message = message.replace("{{result_type}}", "<result_output priority_index=\"1\" name=\"patient_count_xml\"/>");
         Document document = getMessage();
-        updateProgress("Preparing to run query - this may take some time as we wait for a response from i2b2.");
+        updateProgress(String.format("Preparing to run query %s - this may take some time as we wait for a response from i2b2.", queryName));
         Document i2b2Result = httpHelper.postXml(new URI(getProjectManagementService().getCellUrl("CRC") + "request"), document);
         XPath xPath = XPathFactory.newInstance().newXPath();
         NamespaceContext context = new UniversalNamespaceCache(i2b2Result, true, "");

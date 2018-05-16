@@ -113,7 +113,57 @@ terminologyRules = [
 ]
 ```
 
-Remember that the default behavior is to take the exact terminology name, a colon delimiter and the exact code value and
+Finally, sometimes the same terms are in the i2b2 ontology, but in different paths.  This is useful when you want to have
+different visual representations of the hierarchy.  However, this may also be caused by other reasons, and cause you to have
+incorrect code paths listed.  Suppose in our previous example there is an invalid ontology that exists for ICD10 codes, and
+it is showing up when we search based on ICD10 codes.  Our two example paths for ICD-10 codes may look like this:
+```
+\\i2b2_icd10\G\G21\G21.1      <-- This is the path we want
+\\i2b2_icd10_old\E\G\F\G21.1  <-- We don't want this
+```
+
+The last option you can specify for the destination terminology is the path that you want to use.  This allows you to pick
+a single path prefix that you will allow ontology results from, and it will ignore all others.  In our previous example, we
+don't have to specify the exact code path - we can see that the codes we want all start with \\i2b2_icd10\.  This can be
+written into our rule as follows, using the `restrictToOntologyPath` key:
+
+```
+terminologyRules = [
+  # ICD10-CM G21.1 --> ICD10|G211
+  {
+    sourceTerminologyName = "ICD10CM"
+    destinationTerminology {
+        prefix = "ICD10"
+        delimiter = "|"
+        codeReplace {
+            match = "([^\.]*)\.(.*)"
+            replaceWith = "$1$2"
+        }
+    }
+  }
+  # ICD9-CM 250.1 --> ICD250.1
+  {
+    sourceTerminologyName = "ICD9CM"
+    destinationTerminology {
+        prefix = "ICD"
+        delimiter = ""
+        restrictToOntologyPath = "\\\\i2b2_icd10\\"
+    }
+  }
+]
+```
+
+First, please note that HOCON requires us to escape our backslashes, so "\\" becomes "\\\\".
+
+Also note that because this is checking for codes that start with a substring, we need to put the backslash at the end
+of our rule. Otherwise, if we wrote it as
+```
+restrictToOntologyPath = "\\\\i2b2_icd10"
+```
+
+It would also match `\\i2b2_icd10_old`.
+
+When looking at writing rules, the default behavior is to take the exact terminology name, a colon delimiter and the exact code value and
 concatenate them into a string.  If your i2b2 instance is already configured this way, you do not need to define any
 mapping rules.
 

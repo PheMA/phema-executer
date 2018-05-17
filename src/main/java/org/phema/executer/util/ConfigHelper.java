@@ -9,7 +9,16 @@ import java.util.Arrays;
  * Created by Luke Rasmussen on 12/22/17.
  */
 public class ConfigHelper {
+
+    public static boolean getBooleanValue(ConfigObject object, String key, boolean defaultValue) {
+        return (boolean)getValue(object, key, defaultValue);
+    }
+
     public static String getStringValue(ConfigObject object, String key, String defaultValue) {
+        return (String)getValue(object, key, defaultValue);
+    }
+
+    private static Object getValue(ConfigObject object, String key, Object defaultValue) {
         if (object == null) {
             return defaultValue;
         }
@@ -19,7 +28,7 @@ public class ConfigHelper {
                 return defaultValue;
             }
 
-            return object.get(key).unwrapped().toString();
+            return object.get(key).unwrapped();
         }
 
         String[] keys = key.split("\\.");
@@ -32,6 +41,6 @@ public class ConfigHelper {
             return defaultValue;
         }
 
-        return getStringValue(childObject, String.join(".", Arrays.copyOfRange(keys, 1, keys.length)), defaultValue);
+        return getValue(childObject, String.join(".", Arrays.copyOfRange(keys, 1, keys.length)), defaultValue);
     }
 }

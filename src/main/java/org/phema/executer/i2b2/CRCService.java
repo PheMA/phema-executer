@@ -156,7 +156,7 @@ public class CRCService extends I2b2ServiceBase {
         message = message.replace("{{panels}}", panelXml);
         message = message.replace("{{result_type}}", "<result_output priority_index=\"1\" name=\"patient_count_xml\"/>");
         Document document = getMessage();
-        updateProgress("Preparing to run query - this may take some time as we wait for a response from i2b2.");
+        updateProgress(String.format("Preparing to run query %s - this may take some time as we wait for a response from i2b2.", queryName));
         Document i2b2Result = httpHelper.postXml(new URI(getProjectManagementService().getCellUrl("CRC") + "request"), document);
         XPath xPath = XPathFactory.newInstance().newXPath();
         NamespaceContext context = new UniversalNamespaceCache(i2b2Result, true, "");
@@ -164,6 +164,12 @@ public class CRCService extends I2b2ServiceBase {
 
         Element documentElement = i2b2Result.getDocumentElement();
         Element queryMasterElement = (Element)xPath.evaluate("//message_body/ns4:response/query_master", documentElement, XPathConstants.NODE);
+        if (queryMasterElement == null) {
+            updateProgress("The response from i2b2 does not contain a query_master definition.  This is unexpected, and we are unable to process this response.  Please report this to the PhEMA team.");
+            updateProgress(XmlHelpers.documentToString(i2b2Result));
+            throw new Exception("Unable to process an unknown response from i2b2 after executing a query.  Please see the system logs for more information.");
+        }
+
         QueryMaster query = new QueryMaster(
                 XmlHelpers.getChildContentAsInt(queryMasterElement, "query_master_id"),
                 XmlHelpers.getChildContent(queryMasterElement, "name", "(Unknown)")
@@ -209,6 +215,8 @@ public class CRCService extends I2b2ServiceBase {
             updateProgress(String.format("Query execution status - %s", batchModeResult));
             switch (batchModeResult) {
                 case ERROR:
+                    updateProgress("i2b2 returned an error when we checked for the query execution status.  The full response from i2b2 was:");
+                    updateProgress(XmlHelpers.documentToString(i2b2Result));
                     return new DescriptiveResult(false, "i2b2 reported an error when trying to run your phenotype definition.");
                 case FINISHED:
                     return new DescriptiveResult(true, "The i2b2 query has completed running");

@@ -222,7 +222,7 @@ public class HqmfToI2b2 extends Observable {
         // into a larger, final query.
         try {
             updateActionStart("Creating data criteria queries");
-            criteriaQueryMap = defineDataCriteriaQueries(hqmfDocument, hqmfDocument.getDataCriteria(), valueSetConceptMap, crcService, valueSetTranslator, 1, configuration.getQueryPrefix());
+            criteriaQueryMap = defineDataCriteriaQueries(hqmfDocument, hqmfDocument.getDataCriteria(), valueSetConceptMap, crcService, valueSetTranslator, 1, configuration);
             updateActionEnd("Finished creating data criteria queries");
         } catch (PhemaUserException pue) {
             throw pue;  // Re-throw the user-facing exception as-is.
@@ -358,7 +358,7 @@ public class HqmfToI2b2 extends Observable {
 
     private HashMap<DataCriteria, QueryMaster> defineDataCriteriaQueries(
             Document hqmfDocument, ArrayList<DataCriteria> dataCriteria, HashMap<ValueSet, ArrayList<Concept>> valueSetConceptMap,
-            CRCService crcService, ValueSetToI2b2Ontology valueSetTranslator, int nestedLevel, String queryPrefix) throws Exception {
+            CRCService crcService, ValueSetToI2b2Ontology valueSetTranslator, int nestedLevel, I2B2ExecutionConfiguration configuration) throws Exception {
         updateActionDetails(String.format("Processing %d data criteria", dataCriteria.size()), nestedLevel);
         HashMap<DataCriteria, QueryMaster> criteriaQueryMap = new HashMap<>();
         for (DataCriteria criterion : dataCriteria) {
@@ -390,13 +390,15 @@ public class HqmfToI2b2 extends Observable {
                     String agePanelString = crcService.createConceptPanelXmlString(1, false, false, 1, "SAMEVISIT", concepts);
                     temporalCriteriaQueryMap.putAll(defineDataCriteriaQueries(hqmfDocument,
                             new ArrayList<DataCriteria>() {{ add(linkedCriterion); }},
-                            valueSetConceptMap, crcService, valueSetTranslator, (nestedLevel + 1), queryPrefix));
+                            valueSetConceptMap, crcService, valueSetTranslator, (nestedLevel + 1), configuration));
                     String relatedPanelString = crcService.createQueryPanelXmlString(2, false, false, 1, "SAMEVISIT",
                             new ArrayList<QueryMaster>() {{ add(temporalCriteriaQueryMap.get(linkedCriterion)); }});
 
                     updateActionDetails("Creating the age temporal query in i2b2...", nestedLevel);
-                    QueryMaster temporalQuery = crcService.runQueryInstance(String.format("%s - Age Temporal Query", queryPrefix), agePanelString + "\n" + relatedPanelString, "SAMEVISIT", false);
-                    //crcService.pollForQueryCompletion(temporalQuery);
+                    QueryMaster temporalQuery = crcService.runQueryInstance(String.format("%s - Age Temporal Query", configuration.getQueryPrefix()), agePanelString + "\n" + relatedPanelString, "SAMEVISIT", false);
+                    if (configuration.isWaitForEachQueryPart()) {
+                        crcService.pollForQueryCompletion(temporalQuery);
+                    }
                     criteriaQueryMap.putAll(temporalCriteriaQueryMap);
                     criteriaQueryMap.put(criterion, temporalQuery);
                     updateActionDetails("...Created the age temporal query in i2b2", nestedLevel);
@@ -421,15 +423,17 @@ public class HqmfToI2b2 extends Observable {
                     // we will build the temporal relationship part of the query.
                     temporalCriteriaQueryMap.putAll(defineDataCriteriaQueries(hqmfDocument,
                             new ArrayList<DataCriteria>() {{ add(sourceCriterion); add(linkedCriterion); }},
-                            valueSetConceptMap, crcService, valueSetTranslator, (nestedLevel + 1), queryPrefix));
+                            valueSetConceptMap, crcService, valueSetTranslator, (nestedLevel + 1), configuration));
 
                     // Now build the temporal query structure used by i2b2.
                     String panel = crcService.createTemporalQueryXmlString(temporalCriteriaQueryMap.get(sourceCriterion),
                             temporalCriteriaQueryMap.get(linkedCriterion),
                             buildI2B2TemporalDefinition(temporalReference));
                     updateActionDetails("Creating the temporal query in i2b2...", nestedLevel);
-                    QueryMaster temporalQuery = crcService.runQueryInstance(String.format("%s - Temporal Query", queryPrefix), panel, false);
-                    //crcService.pollForQueryCompletion(temporalQuery);
+                    QueryMaster temporalQuery = crcService.runQueryInstance(String.format("%s - Temporal Query", configuration.getQueryPrefix()), panel, false);
+                    if (configuration.isWaitForEachQueryPart()) {
+                        crcService.pollForQueryCompletion(temporalQuery);
+                    }
                     criteriaQueryMap.putAll(temporalCriteriaQueryMap);
                     criteriaQueryMap.put(criterion, temporalQuery);
                     updateActionDetails("...Created the temporal query in i2b2", nestedLevel);
@@ -451,9 +455,11 @@ public class HqmfToI2b2 extends Observable {
                 ArrayList<Concept> concepts = conceptsResult.get().getValue();
                 String panel = crcService.createConceptPanelXmlString(1, false, false, 1, "ANY", concepts);
                 updateActionDetails(String.format("Creating the criterion in i2b2...", criterion.getId()), nestedLevel);
-                String queryName = String.format("%s - %s", queryPrefix, criterion.getId());
+                String queryName = String.format("%s - %s", configuration.getQueryPrefix(), criterion.getId());
                 QueryMaster dataCriteriaQuery = crcService.runQueryInstance(queryName, panel, false);
-                //crcService.pollForQueryCompletion(dataCriteriaQuery);
+                if (configuration.isWaitForEachQueryPart()) {
+                    crcService.pollForQueryCompletion(dataCriteriaQuery);
+                }
                 criteriaQueryMap.put(criterion, dataCriteriaQuery);
                 updateActionDetails("...Saved the criterion definition in i2b2");
             }

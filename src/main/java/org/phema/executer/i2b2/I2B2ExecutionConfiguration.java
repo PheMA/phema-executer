@@ -14,6 +14,7 @@ import java.net.URISyntaxException;
  */
 public class I2B2ExecutionConfiguration implements IExecutionEngineConfiguration {
     public static final String DEFAULT_QUERY_PREFIX = "PhEMA";
+    public static final boolean DEFAULT_WAIT_FOR_EACH_QUERY_PART = true;
 
     private URI i2b2ProjectManagementUrl = null;
     private String i2b2Login = "";
@@ -21,6 +22,7 @@ public class I2B2ExecutionConfiguration implements IExecutionEngineConfiguration
     private String i2b2Project = "";
     private String i2b2Domain = "";
     private String queryPrefix = DEFAULT_QUERY_PREFIX;
+    private boolean waitForEachQueryPart = DEFAULT_WAIT_FOR_EACH_QUERY_PART;
 
     public I2B2ExecutionConfiguration() {
         super();
@@ -46,6 +48,8 @@ public class I2B2ExecutionConfiguration implements IExecutionEngineConfiguration
         setI2b2Domain(ConfigHelper.getStringValue(i2b2Object, "domain", ""));
         setI2b2Project(ConfigHelper.getStringValue(i2b2Object, "project", ""));
         setQueryPrefix(ConfigHelper.getStringValue(i2b2Object, "queryPrefix", DEFAULT_QUERY_PREFIX));
+        setWaitForEachQueryPart(ConfigHelper.getBooleanValue(i2b2Object, "waitForEachQueryPart", DEFAULT_WAIT_FOR_EACH_QUERY_PART));
+
         return validate();
     }
 
@@ -92,6 +96,10 @@ public class I2B2ExecutionConfiguration implements IExecutionEngineConfiguration
     public String getQueryPrefix() { return queryPrefix; }
 
     public void setQueryPrefix(String queryPrefix) { this.queryPrefix = queryPrefix; }
+
+    public boolean isWaitForEachQueryPart() { return waitForEachQueryPart; }
+
+    public void setWaitForEachQueryPart(boolean waitForEachQueryPart) { this.waitForEachQueryPart = waitForEachQueryPart; }
 
     @Override
     public DescriptiveResult validate() {

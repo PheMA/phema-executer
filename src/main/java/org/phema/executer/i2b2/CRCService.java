@@ -164,6 +164,12 @@ public class CRCService extends I2b2ServiceBase {
 
         Element documentElement = i2b2Result.getDocumentElement();
         Element queryMasterElement = (Element)xPath.evaluate("//message_body/ns4:response/query_master", documentElement, XPathConstants.NODE);
+        if (queryMasterElement == null) {
+            updateProgress("The response from i2b2 does not contain a query_master definition.  This is unexpected, and we are unable to process this response.  Please report this to the PhEMA team.");
+            updateProgress(XmlHelpers.documentToString(i2b2Result));
+            throw new Exception("Unable to process an unknown response from i2b2 after executing a query.  Please see the system logs for more information.");
+        }
+
         QueryMaster query = new QueryMaster(
                 XmlHelpers.getChildContentAsInt(queryMasterElement, "query_master_id"),
                 XmlHelpers.getChildContent(queryMasterElement, "name", "(Unknown)")

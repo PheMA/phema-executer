@@ -53,6 +53,11 @@ public class HqmfToI2b2 extends Observable {
                 addObserver(getLogger());
             }
 
+            if (!configFile.exists()) {
+                updateProgress("The configuration file you specified could not be found.  Please make sure that you have the correct path to the file.");
+                return false;
+            }
+
             updateActionStart("Loading the configuration settings for this phenotype");
             Config config = ConfigFactory.parseFile(configFile);
             updateActionEnd("Configuration settings have been loaded");

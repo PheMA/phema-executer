@@ -21,14 +21,15 @@ public class Runner {
     public static void main(String[] args) {
         try {
             if (args == null || args.length == 0) {
-                System.out.println("PhEMA Executer - Usage");
-                System.out.println("  java -jar phema-executer-lib.jar path_to_config");
-                System.out.println("    path_to_config - The path to the .conf file which specifies the phenotype to run");
-                System.out.println();
+                printUsage();
                 return;
             }
 
             File configFile = new File(args[0]);
+            if(configFile.isDirectory()) {
+                printUsage();
+                return;
+            }
 
             ConsoleProgressObserver consoleLogger = new ConsoleProgressObserver();
 
@@ -41,5 +42,19 @@ public class Runner {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static void printUsage() {
+        System.out.println("PhEMA Executer - Usage");
+        System.out.println();
+        System.out.println("java -jar phema-executer-lib.jar [config_file]");
+        System.out.println();
+        System.out.println("Options:");
+        System.out.println("config_file - The .conf file (including the relative or absolute path)\r\n  which specifies the phenotype to run");
+        System.out.println();
+        System.out.println();
+        System.out.println("Example: java -jar phema-executer-lib.jar ./test/test-phenotype.conf");
+        System.out.println();
+
     }
 }

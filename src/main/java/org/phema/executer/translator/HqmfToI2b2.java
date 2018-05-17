@@ -397,7 +397,10 @@ public class HqmfToI2b2 extends Observable {
                     updateActionDetails("Creating the age temporal query in i2b2...", nestedLevel);
                     QueryMaster temporalQuery = crcService.runQueryInstance(String.format("%s - Age Temporal Query", configuration.getQueryPrefix()), agePanelString + "\n" + relatedPanelString, "SAMEVISIT", false);
                     if (configuration.isWaitForEachQueryPart()) {
-                        crcService.pollForQueryCompletion(temporalQuery);
+                        DescriptiveResult result = crcService.pollForQueryCompletion(temporalQuery);
+                        if (!result.isSuccess()) {
+                            updateActionDetails(String.format("Polling for query completion failed - %s", String.join("\r\n", result.getDescriptions())));
+                        }
                     }
                     criteriaQueryMap.putAll(temporalCriteriaQueryMap);
                     criteriaQueryMap.put(criterion, temporalQuery);
@@ -432,7 +435,10 @@ public class HqmfToI2b2 extends Observable {
                     updateActionDetails("Creating the temporal query in i2b2...", nestedLevel);
                     QueryMaster temporalQuery = crcService.runQueryInstance(String.format("%s - Temporal Query", configuration.getQueryPrefix()), panel, false);
                     if (configuration.isWaitForEachQueryPart()) {
-                        crcService.pollForQueryCompletion(temporalQuery);
+                        DescriptiveResult result = crcService.pollForQueryCompletion(temporalQuery);
+                        if (!result.isSuccess()) {
+                            updateActionDetails(String.format("Polling for query completion failed - %s", String.join("\r\n", result.getDescriptions())));
+                        }
                     }
                     criteriaQueryMap.putAll(temporalCriteriaQueryMap);
                     criteriaQueryMap.put(criterion, temporalQuery);
@@ -458,7 +464,10 @@ public class HqmfToI2b2 extends Observable {
                 String queryName = String.format("%s - %s", configuration.getQueryPrefix(), criterion.getId());
                 QueryMaster dataCriteriaQuery = crcService.runQueryInstance(queryName, panel, false);
                 if (configuration.isWaitForEachQueryPart()) {
-                    crcService.pollForQueryCompletion(dataCriteriaQuery);
+                    DescriptiveResult result = crcService.pollForQueryCompletion(dataCriteriaQuery);
+                    if (!result.isSuccess()) {
+                        updateActionDetails(String.format("Polling for query completion failed - %s", String.join("\r\n", result.getDescriptions())));
+                    }
                 }
                 criteriaQueryMap.put(criterion, dataCriteriaQuery);
                 updateActionDetails("...Saved the criterion definition in i2b2");

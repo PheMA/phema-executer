@@ -215,6 +215,8 @@ public class CRCService extends I2b2ServiceBase {
             updateProgress(String.format("Query execution status - %s", batchModeResult));
             switch (batchModeResult) {
                 case ERROR:
+                    updateProgress("i2b2 returned an error when we checked for the query execution status.  The full response from i2b2 was:");
+                    updateProgress(XmlHelpers.documentToString(i2b2Result));
                     return new DescriptiveResult(false, "i2b2 reported an error when trying to run your phenotype definition.");
                 case FINISHED:
                     return new DescriptiveResult(true, "The i2b2 query has completed running");

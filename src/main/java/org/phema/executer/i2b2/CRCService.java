@@ -210,10 +210,10 @@ public class CRCService extends I2b2ServiceBase {
                 return new DescriptiveResult(false, "i2b2 reported an error when trying to run your phenotype definition.");
             }
 
-            Element queryInstanceElement = (Element) xPath.evaluate("//message_body/ns4:response/query_instance", documentElement, XPathConstants.NODE);
-            String batchModeResult = XmlHelpers.getChildContent(queryInstanceElement, "batch_mode", "ERROR");
-            updateProgress(String.format("Query execution status - %s", batchModeResult));
-            switch (batchModeResult) {
+            Element queryInstanceElement = (Element) xPath.evaluate("//message_body/ns4:response/query_instance/query_status_type", documentElement, XPathConstants.NODE);
+            String status = XmlHelpers.getChildContent(queryInstanceElement, "name", "ERROR");
+            updateProgress(String.format("Query execution status - %s", status));
+            switch (status) {
                 case ERROR:
                     updateProgress("i2b2 returned an error when we checked for the query execution status.  The full response from i2b2 was:");
                     updateProgress(XmlHelpers.documentToString(i2b2Result));

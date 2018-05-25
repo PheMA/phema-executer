@@ -27,6 +27,7 @@ public class CRCService extends I2b2ServiceBase {
     public static final String QUEUED = "QUEUED";
     public static final String ERROR = "ERROR";
     public static final String FINISHED = "FINISHED";
+    public static final String COMPLETED = "COMPLETED";
     public static final String PROCESSING = "PROCESSING";
     public static final String SMALL_QUEUE = "SMALL_QUEUE";
     public static final String MEDIUM_QUEUE = "MEDIUM_QUEUE";
@@ -219,6 +220,7 @@ public class CRCService extends I2b2ServiceBase {
                     updateProgress(XmlHelpers.documentToString(i2b2Result));
                     return new DescriptiveResult(false, "i2b2 reported an error when trying to run your phenotype definition.");
                 case FINISHED:
+                case COMPLETED:
                     return new DescriptiveResult(true, "The i2b2 query has completed running");
                 default:
                     // Assume it's still running

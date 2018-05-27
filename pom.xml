@@ -6,7 +6,7 @@
 
     <groupId>groupId</groupId>
     <artifactId>phema-executer-lib</artifactId>
-    <version>0.4</version>
+    <version>0.5</version>
 
     <properties>
         <main.runnable.class>org.phema.executer.Runner</main.runnable.class>

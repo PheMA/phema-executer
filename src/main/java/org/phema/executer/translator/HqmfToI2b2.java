@@ -255,12 +255,23 @@ public class HqmfToI2b2 extends Observable {
         try {
             updateActionStart("Starting to build the master query definition");
             masterQuery = buildQueryFromPreconditions(crcService, hqmfDocument, precondition, true, 1, configuration.getQueryPrefix());
+            updateActionDetails("Running the master query - we will poll for this query to complete");
+            DescriptiveResult masterQueryResult = crcService.pollForQueryCompletion(masterQuery);
+            if (!masterQueryResult.isSuccess()) {
+                updateActionDetails(String.format("Polling for query completion failed - %s", String.join("\r\n", masterQueryResult.getDescriptions())));
+            }
             updateActionEnd("Completed creation of the master query definition");
         } catch (PhemaUserException pue) {
             throw pue;  // Re-throw the user-facing exception as-is.
         } catch (Exception e) {
             // For all other types of exceptions, wrap it in a more user-friendly container.
             throw new PhemaUserException("We encountered an error when trying to run your phenotype in i2b2.  Please see the PhEMA Executer logs for more details.  If insufficient details exist, you may need to work with your i2b2 administrator to see if there are reported failures from within i2b2.", e);
+        }
+
+        if (masterQuery != null) {
+            updateProgress("");
+            updateProgress("************************************");
+            updateProgress(String.format("Total patients: %d", masterQuery.getCount()));
         }
     }
 
@@ -348,13 +359,6 @@ public class HqmfToI2b2 extends Observable {
             String queryName = String.format("%s - %s", queryPrefix, (isMasterQuery ? "Master Query" : parentCondition.getId()));
             QueryMaster query = crcService.runQueryInstance(queryName, crcService.createQueryPanelXmlString(
                     1, requireAll(parentCondition.getConjunction()), parentCondition.isNegation(), 1, "ANY", queryItems), returnResults);
-            if (isMasterQuery) {
-                updateActionDetails("Running the top-level query - we will poll for this query to complete");
-                DescriptiveResult result = crcService.pollForQueryCompletion(query);
-                if (!result.isSuccess()) {
-                    updateActionDetails(String.format("Polling for query completion failed - %s", String.join("\r\n", result.getDescriptions())));
-                }
-            }
             return query;
         }
 

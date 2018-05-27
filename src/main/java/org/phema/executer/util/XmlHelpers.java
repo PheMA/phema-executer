@@ -92,16 +92,6 @@ public class XmlHelpers {
         return textNode.getTextContent();
     }
 
-    public static String dumpDocumentToString(Document document) throws TransformerException {
-        TransformerFactory tf = TransformerFactory.newInstance();
-        Transformer transformer = tf.newTransformer();
-        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-        StringWriter writer = new StringWriter();
-        transformer.transform(new DOMSource(document), new StreamResult(writer));
-        String output = writer.getBuffer().toString().replaceAll("\n|\r", "");
-        return output;
-    }
-
     // Derived from http://www.java2s.com/Code/Java/XML/ConvertNodeListToNodeArray.htm
     public static ArrayList<Node> convertNodeListToArray(NodeList list) {
         int length = list.getLength();
@@ -140,14 +130,34 @@ public class XmlHelpers {
     public static int getChildContentAsInt(Element parent, String name) throws PhemaUserException {
         String value = getChildContent(parent, name, "");
         if (value.length() == 0) {
-            throw new PhemaUserException("There was an unexpected error when trying to get a term hierarchy level - the hierarchy level could not be found from the i2b2 response.");
+            throw new PhemaUserException("There was an unexpected error when trying to get an integer value - the value does not exist or is empty.");
         }
 
         if (!tryParseInt(value)) {
-            throw new PhemaUserException("There was an unexpected error when trying to get a term hierarchy level - the hierarchy level is not an integer.");
+            throw new PhemaUserException("There was an unexpected error when trying to get an integer level - the value is not numeric and cannot be converted to an integer.");
         }
 
         return Integer.parseInt(value);
+    }
+
+    /**
+     * Retrieve an element's content and convert it to a long.  If the value does not exist, or it is not a
+     * long, we will throw an exception.
+     * @param parent The Element to search for the value
+     * @param name The name of the child node within parent
+     * @return A long representation of the value contained in the node.
+     */
+    public static long getChildContentAsLong(Element parent, String name) throws PhemaUserException {
+        String value = getChildContent(parent, name, "");
+        if (value.length() == 0) {
+            throw new PhemaUserException("There was an unexpected error when trying to get a long value - the value does not exist or is empty.");
+        }
+
+        if (!tryParseLong(value)) {
+            throw new PhemaUserException("There was an unexpected error when trying to get a long value - the value is not numeric and cannot be converted to a long.");
+        }
+
+        return Long.parseLong(value);
     }
 
     /**
@@ -158,6 +168,20 @@ public class XmlHelpers {
     private static boolean tryParseInt(String value) {
         try {
             Integer.parseInt(value);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /**
+     * From https://stackoverflow.com/a/8392032/5670646
+     * @param value
+     * @return
+     */
+    private static boolean tryParseLong(String value) {
+        try {
+            Long.parseLong(value);
             return true;
         } catch (NumberFormatException e) {
             return false;

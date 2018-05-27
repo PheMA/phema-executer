@@ -171,10 +171,26 @@ public class CRCService extends I2b2ServiceBase {
             throw new Exception("Unable to process an unknown response from i2b2 after executing a query.  Please see the system logs for more information.");
         }
 
+        Element queryInstanceElement = (Element)xPath.evaluate("//message_body/ns4:response/query_instance", documentElement, XPathConstants.NODE);
+        if (queryInstanceElement == null) {
+            updateProgress("The response from i2b2 does not contain a query_instance definition.  This is unexpected, and we are unable to process this response.  Please report this to the PhEMA team.");
+            updateProgress(XmlHelpers.documentToString(i2b2Result));
+            throw new Exception("Unable to process an unknown response from i2b2 after executing a query.  Please see the system logs for more information.");
+        }
+
         QueryMaster query = new QueryMaster(
-                XmlHelpers.getChildContentAsInt(queryMasterElement, "query_master_id"),
-                XmlHelpers.getChildContent(queryMasterElement, "name", "(Unknown)")
+                XmlHelpers.getChildContentAsLong(queryMasterElement, "query_master_id"),
+                XmlHelpers.getChildContent(queryMasterElement, "name", "(Unknown)"),
+                XmlHelpers.getChildContentAsLong(queryInstanceElement, "query_instance_id")
         );
+
+        // The set size may not come back (if the query is still running), and that's okay.  We'll softly check for the
+        // node, but if it doesn't exist we just won't set the count result at this time.
+        Element setSizeElement = (Element)xPath.evaluate("//message_body/ns4:response/query_result_instance/set_size", documentElement, XPathConstants.NODE);
+        if (setSizeElement != null) {
+            query.setCount(XmlHelpers.getChildContentAsInt((Element)setSizeElement.getParentNode(), "set_size"));
+        }
+
         updateProgress(String.format("Received response from i2b2 - this query instance has a master ID of %d", query.getId()));
 
         return query;
@@ -189,13 +205,13 @@ public class CRCService extends I2b2ServiceBase {
      * Periodically check the i2b2 server to see if our query definition has completed running, if it's still
      * running, or if it encountered some type of error.  This will only return once some type of stoppping
      * condition has been reached.
-     * @param masterQuery The query definition that is to be monitored.
+     * @param query The query definition that is to be monitored.
      */
-    public DescriptiveResult pollForQueryCompletion(QueryMaster masterQuery) throws Exception {
+    public DescriptiveResult pollForQueryCompletion(QueryMaster query) throws Exception {
         updateProgress("Asking i2b2 if the query execution is complete yet");
-        loadRequest("i2b2_getQueryStatus");
+        loadRequest("i2b2_getQueryResults");
         message = replaceCommonMessagePlaceholders(message);
-        message = message.replace("{{query_master_id}}", Integer.toString(masterQuery.getId()));
+        message = message.replace("{{query_instance_id}}", Long.toString(query.getInstanceId()));
 
         Document document = getMessage();
         int iteration = 0;
@@ -211,7 +227,12 @@ public class CRCService extends I2b2ServiceBase {
                 return new DescriptiveResult(false, "i2b2 reported an error when trying to run your phenotype definition.");
             }
 
-            Element queryInstanceElement = (Element) xPath.evaluate("//message_body/ns4:response/query_instance/query_status_type", documentElement, XPathConstants.NODE);
+            Element setSizeElement = (Element)xPath.evaluate("//message_body/ns4:response/query_result_instance/set_size", documentElement, XPathConstants.NODE);
+            if (setSizeElement != null) {
+                query.setCount(XmlHelpers.getChildContentAsInt((Element)setSizeElement.getParentNode(), "set_size"));
+            }
+
+            Element queryInstanceElement = (Element) xPath.evaluate("//message_body/ns4:response/query_result_instance/query_status_type", documentElement, XPathConstants.NODE);
             String status = XmlHelpers.getChildContent(queryInstanceElement, "name", "ERROR");
             updateProgress(String.format("Query execution status - %s", status));
             switch (status) {
@@ -221,6 +242,8 @@ public class CRCService extends I2b2ServiceBase {
                     return new DescriptiveResult(false, "i2b2 reported an error when trying to run your phenotype definition.");
                 case FINISHED:
                 case COMPLETED:
+                    updateProgress("Updating query results now that the query has completed");
+                    updateQueryResults(query);
                     return new DescriptiveResult(true, "The i2b2 query has completed running");
                 default:
                     // Assume it's still running
@@ -233,6 +256,23 @@ public class CRCService extends I2b2ServiceBase {
                     iteration, secondsWait));
             Thread.sleep(secondsWait * 1000);
         }
+    }
+
+    public void updateQueryResults(QueryMaster query) throws Exception {
+        updateProgress("Asking i2b2 for details about a query");
+        loadRequest("i2b2_getQueryResults");
+        message = replaceCommonMessagePlaceholders(message);
+        message = message.replace("{{query_instance_id}}", Long.toString(query.getInstanceId()));
+
+        Document document = getMessage();
+        Document i2b2Result = httpHelper.postXml(new URI(getProjectManagementService().getCellUrl("CRC") + "request"), document);
+        XPath xPath = XPathFactory.newInstance().newXPath();
+        NamespaceContext context = new UniversalNamespaceCache(i2b2Result, true, "");
+        xPath.setNamespaceContext(context);
+
+        Element documentElement = i2b2Result.getDocumentElement();
+        Element queryResultElement = (Element)xPath.evaluate("//message_body/ns4:response/query_result_instance", documentElement, XPathConstants.NODE);
+        query.setCount(XmlHelpers.getChildContentAsInt(queryResultElement, "set_size"));
     }
 
 

@@ -48,9 +48,9 @@ public class ValueSetHelper {
         put("2.16.840.1.113883.10.20.28.3.46", new ValueSetMapEntry("./*/cda:participation[@typeCode='CSM']/cda:role[@classCode='MANU']/cda:playingEntity[@classCode='MMAT']/cda:code", null));
         put("2.16.840.1.113883.10.20.28.3.47", new ValueSetMapEntry("./*/cda:participation[@typeCode='CSM']/cda:role[@classCode='MANU']/cda:playingEntity[@classCode='MMAT']/cda:code", null));
         put("2.16.840.1.113883.10.20.28.3.48", new ValueSetMapEntry("./*/cda:participation[@typeCode='CSM']/cda:role[@classCode='MANU']/cda:playingManufacturedMaterial[@classCode='MMAT']/cda:code", null));
-        put("2.16.840.1.113883.10.20.28.3.49", new ValueSetMapEntry("./*/cda:participation[@typeCode='CSM']/cda:role[@classCode='MANU']/cda:playingMaterial[@classCode='MMAT']/cda:code", null));
+        put("2.16.840.1.113883.10.20.28.3.49", new ValueSetMapEntry("./*/cda:participation[@typeCode='PRD']/cda:role[@classCode='THER']//cda:code", null));
         put("2.16.840.1.113883.10.20.28.3.50", new ValueSetMapEntry("./*/cda:participation[@typeCode='CSM']/cda:role[@classCode='MANU']/cda:playingMaterial[@classCode='MMAT']/cda:code", null));
-        put("2.16.840.1.113883.10.20.28.3.51", new ValueSetMapEntry("./*/cda:participation[@typeCode='CSM']/cda:role[@classCode='MANU']/cda:playingMaterial[@classCode='MMAT']/cda:code", null));
+        put("2.16.840.1.113883.10.20.28.3.51", new ValueSetMapEntry("./*/cda:participation[@typeCode='PRD']/cda:role[@classCode='THER']/cda:code", null));
         put("2.16.840.1.113883.10.20.28.3.52", new ValueSetMapEntry("./*/cda:value", null));
         put("2.16.840.1.113883.10.20.28.3.53", new ValueSetMapEntry("./*/cda:code", "./*/cda:value"));
         put("2.16.840.1.113883.10.20.28.3.6", new ValueSetMapEntry("./*/cda:value", null));

@@ -45,7 +45,8 @@ public class Runner {
     }
 
     private static void printUsage() {
-        System.out.println("PhEMA Executer - Usage");
+        Version version = new Version();
+        System.out.println(String.format("PhEMA Executer v%s - Usage", version.toString()));
         System.out.println();
         System.out.println("java -jar phema-executer-lib.jar [config_file]");
         System.out.println();

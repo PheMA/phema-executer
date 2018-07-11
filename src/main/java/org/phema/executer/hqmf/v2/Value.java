@@ -32,6 +32,12 @@ public class Value {
         initialize(entry, defaultType, false);
     }
 
+    public Value(String type, String value, String unit) {
+        this.type = type;
+        this.value = value;
+        this.unit = unit;
+    }
+
     private void initialize(Node entry, String defaultType, boolean forceInclusive) throws XPathExpressionException {
         this.entry = entry;
         XPath xPath = XmlHelpers.createXPath(entry.getOwnerDocument());

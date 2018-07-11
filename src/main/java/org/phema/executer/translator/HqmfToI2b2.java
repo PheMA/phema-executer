@@ -269,9 +269,9 @@ public class HqmfToI2b2 extends Observable {
         }
 
         if (masterQuery != null) {
-            updateProgress("");
-            updateProgress("************************************");
-            updateProgress(String.format("Total patients: %d", masterQuery.getCount()));
+            updateActionDetails("");
+            updateActionDetails("************************************");
+            updateActionDetails(String.format("Total patients: %d", masterQuery.getCount()));
         }
     }
 
@@ -467,8 +467,34 @@ public class HqmfToI2b2 extends Observable {
                                     valueSetOid));
                 }
 
+                // Look for any subset operators, which includes COUNT.  If applicable, specify the lower bound.
+                int itemOccurrence = 1;   // Default to 1
+                if (criterion.getSubsetOperators() != null && criterion.getSubsetOperators().size() > 0) {
+                    Optional<SubsetOperator> operatorResult = criterion.getSubsetOperators().stream()
+                            .filter(x -> x.getType().equals("COUNT"))
+                            .findFirst();
+                    if (operatorResult.isPresent()) {
+                        SubsetOperator countOperator = operatorResult.get();
+                        Range range = (Range)countOperator.getValue();
+                        String rangeHigh = range.safeGetHighAsString();
+                        String rangeLow = range.safeGetLowAsString();
+                        if (rangeHigh != null
+                                && !rangeHigh.equalsIgnoreCase("PINF")
+                                && !rangeHigh.equals("")) {
+                            throw new PhemaUserException(String.format("i2b2 only supports specifying a minimum count - the criterion '%s - %s' specifies an upper bound, which cannot be supported",
+                                    criterion.getId(), criterion.getDescription()));
+                        }
+
+                        if (rangeLow == null || rangeLow.equals("")) {
+                            updateActionDetails("The i2b2 criteria has a COUNT operator, with no lower or upper bound specified.  Assuming a default count of >=1.", nestedLevel);
+                        }
+
+                        itemOccurrence = Integer.parseInt(rangeLow);
+                    }
+                }
+
                 ArrayList<Concept> concepts = conceptsResult.get().getValue();
-                String panel = crcService.createConceptPanelXmlString(1, false, false, 1, "ANY", concepts);
+                String panel = crcService.createConceptPanelXmlString(1, false, false, itemOccurrence, "ANY", concepts);
                 updateActionDetails(String.format("Creating the criterion in i2b2...", criterion.getId()), nestedLevel);
                 String queryName = String.format("%s - %s", configuration.getQueryPrefix(), criterion.getId());
                 QueryMaster dataCriteriaQuery = crcService.runQueryInstance(queryName, panel, false);

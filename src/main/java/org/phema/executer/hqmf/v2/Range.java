@@ -55,6 +55,13 @@ public class Range {
         this.width = width;
     }
 
+    public Range(String type, Object low, Object high, Object width) {
+        this.type = type;
+        this.low = low;
+        this.high = high;
+        this.width = width;
+    }
+
     public Object getLow() {
         return low;
     }
@@ -77,6 +84,41 @@ public class Range {
 
     public void setWidth(Object width) {
         this.width = width;
+    }
+
+    public String safeGetHighAsString() {
+        return safeGetObjectAsValueString(this.high);
+    }
+
+    public String safeGetLowAsString() {
+        return safeGetObjectAsValueString(this.low);
+    }
+
+    /**
+     * Helper function that converts an object to a string representation, if it is a Value or a String
+     * @param obj the object to convert
+     * @return String value contained in the object, or null if we are unable to convert it
+     */
+    private String safeGetObjectAsValueString(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+
+        Value asValue = (obj instanceof Value ? (Value)obj : null);
+        if (asValue == null) {
+            // It's not a value - is it a String?
+            String asString = (obj instanceof String ? (String)obj : null);
+            if (asString == null) {
+                // If not, we don't know what to do with it
+                return null;
+            }
+
+            // It's a String - return that
+            return asString;
+        }
+
+        // It's a Value - return the contained value as a string.
+        return asValue.getValue();
     }
 
     // Either derives a value from a specific path or generates a new value (or returns nil if none found)

@@ -16,7 +16,7 @@ public class FileValueSetRepositoryTest {
     void initialize() throws Exception {
         FileValueSetRepository valueSets = new FileValueSetRepository();
         valueSets.initialize(new HashMap<String,String>() {{ put(FileValueSetRepository.Parameters.FilePath, "tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.csv"); }});
-        assertEquals(1, valueSets.getValueSets().size());
+        assertEquals(7, valueSets.getValueSets().size());
     }
 
     @Test
@@ -31,7 +31,7 @@ public class FileValueSetRepositoryTest {
     void getByOID_Result() throws Exception {
         FileValueSetRepository valueSets = new FileValueSetRepository();
         valueSets.initialize(new HashMap<String,String>() {{ put(FileValueSetRepository.Parameters.FilePath, "tests/resources/phenotype-packages/phema-bph/phema-bph-use-case.csv"); }});
-        ValueSet valueSet = valueSets.getByOID("2.16.840.1.113762.1.4.1034.65");
-        assertEquals("2.16.840.1.113762.1.4.1034.65", valueSet.getOid());
+        ValueSet valueSet = valueSets.getByOID("2.16.840.1.113762.1.4.1053.30");
+        assertEquals("2.16.840.1.113762.1.4.1053.30", valueSet.getOid());
     }
 }

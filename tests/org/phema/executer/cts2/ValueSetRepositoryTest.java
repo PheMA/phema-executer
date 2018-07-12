@@ -24,11 +24,13 @@ class ValueSetRepositoryTest {
             super(false);
         }
 
-        public Document PostXml(URI uri, Document message) throws Exception {
+        @Override
+        public Document postXml(URI uri, Document message) throws Exception {
             return XmlHelpers.loadXMLFromString(nextResponse);
         }
 
-        public Document GetXml(URI uri) throws Exception {
+        @Override
+        public Document getXml(URI uri) throws Exception {
             return XmlHelpers.loadXMLFromString(nextResponse);
         }
     }

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 public class DescriptiveResult {
     private boolean success;
     private ArrayList<String> descriptions;
+    private Object data;
 
     public DescriptiveResult() {
         setDescriptions(new ArrayList<>());
@@ -18,15 +19,30 @@ public class DescriptiveResult {
         setDescriptions(new ArrayList<>());
     }
 
+    public DescriptiveResult(boolean result, ArrayList<String> descriptions, Object data) {
+        setSuccess(result);
+        setDescriptions(descriptions);
+        setData(data);
+    }
+
     public DescriptiveResult(boolean result, ArrayList<String> descriptions) {
         setSuccess(result);
         setDescriptions(descriptions);
+        setData(null);
+    }
+
+    public DescriptiveResult(boolean result, String description, Object data) {
+        setSuccess(result);
+        setDescriptions(new ArrayList<>());
+        addDescription(description);
+        setData(data);
     }
 
     public DescriptiveResult(boolean result, String description) {
         setSuccess(result);
         setDescriptions(new ArrayList<>());
         addDescription(description);
+        setData(null);
     }
 
     public boolean isSuccess() {
@@ -48,4 +64,8 @@ public class DescriptiveResult {
     public boolean addDescription(String description) {
         return this.descriptions.add(description);
     }
+
+    public Object getData() { return data; }
+
+    public void setData(Object data) { this.data = data; }
 }

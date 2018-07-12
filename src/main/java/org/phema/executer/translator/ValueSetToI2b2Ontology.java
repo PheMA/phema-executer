@@ -31,6 +31,18 @@ public class ValueSetToI2b2Ontology {
     private ArrayList<I2b2OverrideRule> overrideRules;
     private OntologyService ontService;
 
+    public class TranslationResult {
+        public ArrayList<Member> UnmappedMembers;
+        public HashMap<Member, List<Concept>> MappedMembers;
+        public ArrayList<Concept> DistinctMappedConcepts;
+
+        public TranslationResult() {
+            UnmappedMembers = new ArrayList<Member>();
+            MappedMembers = new HashMap<Member, List<Concept>>();
+            DistinctMappedConcepts = new ArrayList<Concept>();
+        }
+    }
+
     private class BasecodeRuleMatch {
         public String basecode;
         public I2b2TerminologyRule rule;
@@ -53,19 +65,29 @@ public class ValueSetToI2b2Ontology {
         initializeOverrideRules(config);
     }
 
-    public ArrayList<Concept> translate(ValueSet valueSet) throws PhemaUserException {
+    //public ArrayList<Concept> translate(ValueSet valueSet) throws PhemaUserException {
+    public TranslationResult translate(ValueSet valueSet) throws PhemaUserException {
         if (ontService == null) {
             throw new PhemaUserException("No active i2b2 instance was provided.  Please make sure that your username and password work correctly with the configured i2b2 instance.");
         }
 
         ArrayList<Member> members = valueSet.getMembers();
         ArrayList<Concept> concepts = new ArrayList<>();
+        TranslationResult result = new TranslationResult();
         for (Member member : members) {
             BasecodeRuleMatch basecodeRule = translateValueSetMemberToBasecode(member);
-            concepts.addAll(filterFoundConcepts(basecodeRule));
+            List<Concept> foundConcepts = filterFoundConcepts(basecodeRule);
+            if (foundConcepts.isEmpty()) {
+                result.UnmappedMembers.add(member);
+            }
+            else {
+                result.MappedMembers.put(member, foundConcepts);
+                concepts.addAll(foundConcepts);
+            }
         }
 
-        return distinctConceptList(concepts);
+        result.DistinctMappedConcepts = distinctConceptList(concepts);
+        return result;
     }
 
     public ArrayList<Concept> translateAgeRequirement(DataCriteria criterion) throws PhemaUserException {

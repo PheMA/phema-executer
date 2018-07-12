@@ -23,6 +23,7 @@ import org.phema.executer.models.i2b2.TemporalDefinition;
 import org.phema.executer.models.i2b2.TemporalEvent;
 import org.phema.executer.util.HttpHelper;
 import org.phema.executer.valueSets.FileValueSetRepository;
+import org.phema.executer.valueSets.models.Member;
 import org.phema.executer.valueSets.models.ValueSet;
 
 import java.io.File;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
  */
 public class HqmfToI2b2 extends Observable {
     private HashMap<DataCriteria, QueryMaster> criteriaQueryMap = null;
+    private List<QueryMaster> queries = null;
 
     public Observer getLogger() {
         return logger;
@@ -93,6 +95,7 @@ public class HqmfToI2b2 extends Observable {
     public void translate(IDocument document, Config config) throws PhemaUserException {
         // Reset any pre-existing variables
         criteriaQueryMap = null;
+        queries = new ArrayList<QueryMaster>();
 
         if (document == null) {
             updateProgress("The document is null - exiting");
@@ -209,14 +212,24 @@ public class HqmfToI2b2 extends Observable {
             int codeCount = valueSet.getMembers().size();
             updateActionDetails(String.format("Mapping %d codes in %s (OID: %s)",
                     codeCount, valueSet.getName(), valueSet.getOid()));
-            ArrayList<Concept> mappedConcepts = valueSetTranslator.translate(valueSet);
-            int mappedCount = mappedConcepts.size();
-            updateActionDetails(String.format("  Mapped %d i2b2 ontology terms to %d value set codes",
-                    mappedCount, codeCount));
+            ValueSetToI2b2Ontology.TranslationResult translationResult = valueSetTranslator.translate(valueSet);
+            int mappedCount = translationResult.DistinctMappedConcepts.size();
             if (mappedCount == 0) {
-                updateActionDetails("  *WARNING*: No mappings found for this value set");
+                updateActionDetails("  *WARNING*: No mappings found for this value set - the phenotype results may not be accurate");
             }
-            valueSetConceptMap.put(valueSet, mappedConcepts);
+            else {
+                updateActionDetails(String.format("  Mapped %d i2b2 ontology terms to %d value set codes",
+                        mappedCount, codeCount));
+            }
+
+            if (translationResult.UnmappedMembers.size() > 0) {
+                updateActionDetails("  The following value set codes could not be mapped in your i2b2 instance:");
+                for (Member member : translationResult.UnmappedMembers) {
+                    updateActionDetails(String.format("     %s (%s : %s)", member.getDescription(), member.getCodeSystem(), member.getCode()));
+                }
+                updateActionDetails("");
+            }
+            valueSetConceptMap.put(valueSet, translationResult.DistinctMappedConcepts);
         }
         updateActionEnd("Finished mapping value set codes to i2b2 ontology");
 
@@ -228,6 +241,7 @@ public class HqmfToI2b2 extends Observable {
         try {
             updateActionStart("Creating data criteria queries");
             criteriaQueryMap = defineDataCriteriaQueries(hqmfDocument, hqmfDocument.getDataCriteria(), valueSetConceptMap, crcService, valueSetTranslator, 1, configuration);
+            queries.addAll(criteriaQueryMap.values());
             updateActionEnd("Finished creating data criteria queries");
         } catch (PhemaUserException pue) {
             throw pue;  // Re-throw the user-facing exception as-is.
@@ -271,7 +285,21 @@ public class HqmfToI2b2 extends Observable {
         if (masterQuery != null) {
             updateActionDetails("");
             updateActionDetails("************************************");
+            updateActionDetails("");
             updateActionDetails(String.format("Total patients: %d", masterQuery.getCount()));
+            updateActionDetails("");
+            updateActionDetails("Query Breakdown:");
+            updateActionDetails("------------------------------------");
+            int maxLength = 0;
+            List<QueryMaster> sortedMasterQueryList = queries.stream().sorted().distinct().collect(Collectors.toList());
+            for (QueryMaster entry : sortedMasterQueryList) {
+                maxLength = Math.max(maxLength, entry.getName().length());
+            }
+            maxLength = Math.max(maxLength, masterQuery.getName().length());
+            for (QueryMaster entry : sortedMasterQueryList) {
+                updateActionDetails(String.format(String.format(String.format("  %%-%ds   %%d", maxLength), entry.getName(), entry.getCount())));
+            }
+            updateActionDetails(String.format(String.format(String.format("  %%-%ds   %%d", maxLength), masterQuery.getName(), masterQuery.getCount())));
         }
     }
 
@@ -353,8 +381,7 @@ public class HqmfToI2b2 extends Observable {
         // Once we get a definition that is just QueryMaster entries, we need to create a new query
         // master based off of that.
         if (queryItems.size() > 0) {
-            // TODO: Counts (e.g., >=2 instances)
-            // TODO: Exclusion (NOT)
+            queries.addAll(queryItems);
             boolean isMasterQuery = (nestedLevel == 1);
             String queryName = String.format("%s - %s", queryPrefix, (isMasterQuery ? "Master Query" : parentCondition.getId()));
             QueryMaster query = crcService.runQueryInstance(queryName, crcService.createQueryPanelXmlString(
@@ -547,13 +574,6 @@ public class HqmfToI2b2 extends Observable {
         String path = config.get("path").unwrapped().toString();
         updateActionStart(String.format("Creating a value set repository from the file '%s'", path));
 
-//        ConfigOrigin origin = config.origin();
-//        URL configFilePath = origin.url();
-//        File configFile = new File(configFilePath.getFile());
-//        String baseDirectory = configFile.getParent();
-//
-//        updateActionDetails(String.format("Looking for the value sets file in the directory '%s'", baseDirectory));
-//        String fullFilePath = (new File(baseDirectory, path)).getAbsolutePath();
         String fullFilePath = getFilePathRelativeToConfigFile(config, "path");
         updateActionDetails(String.format("Repository path set to '%s'", fullFilePath));
 
@@ -564,6 +584,13 @@ public class HqmfToI2b2 extends Observable {
         return repository;
     }
 
+    /**
+     * Utility function to get a fully qualified file path in relationship to the location of the configuration
+     * file.
+     * @param config
+     * @param fileNameKey
+     * @return String
+     */
     private String getFilePathRelativeToConfigFile(ConfigObject config, String fileNameKey) {
         ConfigOrigin origin = config.origin();
         URL configFilePath = origin.url();
@@ -608,6 +635,12 @@ public class HqmfToI2b2 extends Observable {
         return valueSetRepositories;
     }
 
+    /**
+     * Build a TemporalDefinition used within an i2b2 query, given an HQMF TemporalReference
+     * @param reference
+     * @return
+     * @throws PhemaUserException
+     */
     private TemporalDefinition buildI2B2TemporalDefinition(TemporalReference reference) throws PhemaUserException {
         TemporalDefinition definition = new TemporalDefinition(new TemporalEvent("Event 1", "", "ANY"),
                 new TemporalEvent("Event 2", "", "ANY"), "", "", "");
@@ -624,6 +657,14 @@ public class HqmfToI2b2 extends Observable {
         return definition;
     }
 
+    /**
+     * Given a low and high bound value (either or both of which may be null), set the correct temporal bound within
+     * our i2b2 TemporalDefinition object.  This includes both the value and the units.
+     * @param lowBound
+     * @param highBound
+     * @param definition The TemporalDefinition that will be updated with the correct bound
+     * @throws PhemaUserException
+     */
     private void setTemporalDefinitionValue(Value lowBound, Value highBound, TemporalDefinition definition) throws PhemaUserException {
         // TODO: Support both bounds.  Cheating right now with one.
         Value bound = (lowBound == null ? highBound : lowBound);
@@ -650,23 +691,21 @@ public class HqmfToI2b2 extends Observable {
         definition.setValue(bound.getValue());
     }
 
+    /**
+     * Given a low and high bound value (either or both of which may be null), set the correct temporal definition
+     * operator used by the i2b2 TemporalDefinition object.
+     * @param lowBound
+     * @param highBound
+     * @param definition
+     * @throws PhemaUserException
+     */
     private void setTemporalDefinitionOperator(Value lowBound, Value highBound, TemporalDefinition definition) throws PhemaUserException {
         if (lowBound != null) {
-            if (lowBound.isForceInclusive()) {
-                definition.setOperator("GREATEREQUAL");
-            }
-            else {
-                definition.setOperator("GREATER");
-            }
+            definition.setOperator(lowBound.isForceInclusive() ? "GREATEREQUAL" : "GREATER");
         }
 
         if (highBound != null) {
-            if (highBound.isForceInclusive()) {
-                definition.setOperator("LESSEQUAL");
-            }
-            else {
-                definition.setOperator("LESS");
-            }
+            definition.setOperator(highBound.isForceInclusive() ? "LESSEQUAL" : "LESS");
         }
 
         if (lowBound != null && highBound != null) {
@@ -678,6 +717,12 @@ public class HqmfToI2b2 extends Observable {
         }
     }
 
+    /**
+     * Convert a type of HQMF temporal relationship into the timing type used by i2b2 between two events.
+     * @param temporalType
+     * @param definition
+     * @throws PhemaUserException
+     */
     private void setTemporalDefinitionTiming(String temporalType, TemporalDefinition definition) throws PhemaUserException {
         if (temporalType.equals("CONCURRENT")) {
         }
@@ -738,6 +783,12 @@ public class HqmfToI2b2 extends Observable {
         }
     }
 
+    /**
+     * Utility function to translate the precondition requirement into a boolean
+     * @param conjunction
+     * @return
+     * @throws PhemaUserException
+     */
     private boolean requireAll(String conjunction) throws PhemaUserException {
         switch (conjunction) {
             case Precondition.ALL_TRUE:

@@ -3,7 +3,7 @@ package org.phema.executer.models.i2b2;
 /**
  * Created by Luke Rasmussen on 1/18/18.
  */
-public class QueryMaster {
+public class QueryMaster implements Comparable<QueryMaster> {
     public long id;
     public String name;
     public long instanceId;
@@ -41,5 +41,14 @@ public class QueryMaster {
 
     public void setInstanceId(long instanceId) {
         this.instanceId = instanceId;
+    }
+
+    @Override
+    public int compareTo(QueryMaster other) {
+        if (other == null) {
+            return 1;
+        }
+
+        return Long.compare(this.getId(), other.getId());
     }
 }

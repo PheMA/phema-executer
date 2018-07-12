@@ -38,7 +38,7 @@ public class Runner {
             translator.setLogger(consoleLogger);
             translator.execute(configFile);
             long endTime = System.nanoTime();
-            System.out.printf("Elapsed execution time in seconds: %.2f\r\n", ((endTime - startTime) / 1000000000.0));
+            System.out.printf("\r\nElapsed execution time in seconds: %.2f\r\n", ((endTime - startTime) / 1000000000.0));
         } catch (Exception e) {
             e.printStackTrace();
         }

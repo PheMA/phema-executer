@@ -32,11 +32,7 @@ public class OntologyService extends I2b2ServiceBase {
     }
 
     public ArrayList<Concept> getCodeInfo(String code) throws PhemaUserException {
-        loadRequest("i2b2_getCodeInfo");
-        message = message.replace("{{domain}}", configuration.getI2b2Domain());
-        message = message.replace("{{username}}", configuration.getI2b2Login());
-        message = message.replace("{{token}}", pmService.getAuthenticationToken());
-        message = message.replace("{{project}}", configuration.getI2b2Project());
+        prepareRequest("i2b2_getCodeInfo");
         message = message.replace("{{code}}", code);
         Document document = null;
         try {
@@ -56,16 +52,51 @@ public class OntologyService extends I2b2ServiceBase {
         xPath.setNamespaceContext(context);
 
         Element documentElement = i2b2Result.getDocumentElement();
+        return convertConceptXmlToObjects(xPath, documentElement);
+    }
+
+    public ArrayList<Concept> getCategories() throws PhemaUserException {
+        prepareRequest("i2b2_getCategories");
+        Document document = null;
+        try {
+            document = getMessage();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        Document i2b2Result = null;
+        try {
+            i2b2Result = httpHelper.postXml(new URI(getProjectManagementService().getCellUrl("ONT") + "getCategories"), document);
+        } catch (Exception e) {
+            //return new DescriptiveResult(false, "We were unable to attempt to log in to your i2b2 instance.  Please make sure that you have entered the correct Project Management URL, and that i2b2 is up and running.");
+        }
+        XPath xPath = XPathFactory.newInstance().newXPath();
+        NamespaceContext context = new UniversalNamespaceCache(i2b2Result, true, "");
+        xPath.setNamespaceContext(context);
+
+        Element documentElement = i2b2Result.getDocumentElement();
+        return convertConceptXmlToObjects(xPath, documentElement);
+    }
+
+    private void prepareRequest(String messageName) {
+        loadRequest(messageName);
+        message = message.replace("{{domain}}", configuration.getI2b2Domain());
+        message = message.replace("{{username}}", configuration.getI2b2Login());
+        message = message.replace("{{token}}", pmService.getAuthenticationToken());
+        message = message.replace("{{project}}", configuration.getI2b2Project());
+    }
+
+    private ArrayList<Concept> convertConceptXmlToObjects(XPath xPath, Element documentElement) throws PhemaUserException {
         HashMap<String, Concept> concepts = new HashMap<>();
         NodeList conceptNodes = null;
         try {
-            conceptNodes = (NodeList)xPath.evaluate("//message_body/ns6:concepts/concept", documentElement, XPathConstants.NODESET);
+            conceptNodes = (NodeList) xPath.evaluate("//message_body/ns6:concepts/concept", documentElement, XPathConstants.NODESET);
         } catch (XPathExpressionException e) {
             throw new PhemaUserException("There was an unexpected error when trying to find the list of i2b2 concepts", e);
         }
 
         for (int index = 0; index < conceptNodes.getLength(); index++) {
-            Element conceptElement = (Element)conceptNodes.item(index);
+            Element conceptElement = (Element) conceptNodes.item(index);
             String key = XmlHelpers.getChildContent(conceptElement, "key", "");
             if (!concepts.containsKey(key)) {
                 concepts.put(key, new Concept(key,

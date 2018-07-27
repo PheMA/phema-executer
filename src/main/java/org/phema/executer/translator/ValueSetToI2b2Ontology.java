@@ -34,12 +34,14 @@ public class ValueSetToI2b2Ontology {
     public class TranslationResult {
         public ArrayList<Member> UnmappedMembers;
         public HashMap<Member, List<Concept>> MappedMembers;
+        public HashMap<Member, List<Concept>> FilteredOutMembers;
         public ArrayList<Concept> DistinctMappedConcepts;
 
         public TranslationResult() {
-            UnmappedMembers = new ArrayList<Member>();
-            MappedMembers = new HashMap<Member, List<Concept>>();
-            DistinctMappedConcepts = new ArrayList<Concept>();
+            UnmappedMembers = new ArrayList<>();
+            MappedMembers = new HashMap<>();
+            FilteredOutMembers = new HashMap<>();
+            DistinctMappedConcepts = new ArrayList<>();
         }
     }
 
@@ -65,7 +67,6 @@ public class ValueSetToI2b2Ontology {
         initializeOverrideRules(config);
     }
 
-    //public ArrayList<Concept> translate(ValueSet valueSet) throws PhemaUserException {
     public TranslationResult translate(ValueSet valueSet) throws PhemaUserException {
         if (ontService == null) {
             throw new PhemaUserException("No active i2b2 instance was provided.  Please make sure that your username and password work correctly with the configured i2b2 instance.");
@@ -76,13 +77,22 @@ public class ValueSetToI2b2Ontology {
         TranslationResult result = new TranslationResult();
         for (Member member : members) {
             BasecodeRuleMatch basecodeRule = translateValueSetMemberToBasecode(member);
-            List<Concept> foundConcepts = filterFoundConcepts(basecodeRule);
+            ArrayList<ArrayList<Concept>> filterResults = filterFoundConcepts(basecodeRule);
+            ArrayList<Concept> foundConcepts = filterResults.get(0);
+            ArrayList<Concept> filteredOutConcepts = filterResults.get(1);
             if (foundConcepts.isEmpty()) {
                 result.UnmappedMembers.add(member);
             }
             else {
                 result.MappedMembers.put(member, foundConcepts);
                 concepts.addAll(foundConcepts);
+            }
+
+            // We separately track any concepts that were filtered out so that we can
+            // report to the user if their filter is perhaps too restrictive.  Note
+            // that this is only set if a filter is defined.
+            if (!filteredOutConcepts.isEmpty()) {
+                result.FilteredOutMembers.put(member, filteredOutConcepts);
             }
         }
 
@@ -130,7 +140,10 @@ public class ValueSetToI2b2Ontology {
             temp.setCodeSystem("Age");
             temp.setCode(Integer.toString(counter));
             BasecodeRuleMatch basecodeRule = translateValueSetMemberToBasecode(temp);
-            ageConcepts.addAll(filterFoundConcepts(basecodeRule));
+            ArrayList<ArrayList<Concept>> filterResults = filterFoundConcepts(basecodeRule);
+            ArrayList<Concept> foundConcepts = filterResults.get(0);
+            ArrayList<Concept> filteredOutConcepts = filterResults.get(1);
+            ageConcepts.addAll(foundConcepts);
         }
 
         return distinctConceptList(ageConcepts);
@@ -155,9 +168,10 @@ public class ValueSetToI2b2Ontology {
         return distinctConcepts;
     }
 
-    private ArrayList<Concept> filterFoundConcepts(BasecodeRuleMatch basecodeRule) throws PhemaUserException {
-        String basecode = basecodeRule.basecode;
+    private ArrayList<ArrayList<Concept>> filterFoundConcepts(BasecodeRuleMatch basecodeRule) throws PhemaUserException {
+        //String basecode = basecodeRule.basecode;
         ArrayList<Concept> concepts = new ArrayList<>();
+        ArrayList<Concept> filteredOutConcepts = new ArrayList<>();
         ArrayList<Concept> foundConcepts = this.ontService.getCodeInfo(basecodeRule.basecode);
         if (foundConcepts != null && foundConcepts.size() > 0) {
             // If we have a mapped rule that includes a setting for the ontology path that we should restrict to, make
@@ -167,13 +181,16 @@ public class ValueSetToI2b2Ontology {
                 concepts.addAll(foundConcepts.stream()
                         .filter(x -> x.getKey().contains(restrictToPath))
                         .collect(Collectors.toList()));
+                filteredOutConcepts.addAll(foundConcepts.stream()
+                        .filter(x -> !x.getKey().contains(restrictToPath))
+                        .collect(Collectors.toList()));
             }
             else {
                 concepts.addAll(foundConcepts);
             }
         }
 
-        return concepts;
+        return new ArrayList<ArrayList<Concept>>() {{ add(concepts); add(filteredOutConcepts); }};
     }
 
     /**

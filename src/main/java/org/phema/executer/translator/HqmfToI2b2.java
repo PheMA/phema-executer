@@ -204,6 +204,14 @@ public class HqmfToI2b2 extends Observable {
         }
         updateActionEnd(String.format("Completed loading mapping rules for %d of %d value sets", valueSets.size(), valueSetCount));
 
+        updateActionStart("Gathering information about your i2b2 ontology setup");
+        ArrayList<Concept> ontologyCategories = ontService.getCategories();
+        updateActionDetails("The following ontology categories were found:", 1);
+        for (Concept category : ontologyCategories) {
+            updateActionDetails(String.format("%s - %s", category.getName(), category.getKey()), 2);
+        }
+        updateActionEnd("Completed information gathering about your i2b2 ontology");
+
         // Translate the value sets into the i2b2 ontology.  What we end up with is a mapping between a value set and
         // a list of i2b2 Concepts.
         updateActionStart("Mapping value set codes to i2b2 ontology");
@@ -215,18 +223,26 @@ public class HqmfToI2b2 extends Observable {
             ValueSetToI2b2Ontology.TranslationResult translationResult = valueSetTranslator.translate(valueSet);
             int mappedCount = translationResult.DistinctMappedConcepts.size();
             if (mappedCount == 0) {
-                updateActionDetails("  *WARNING*: No mappings found for this value set - the phenotype results may not be accurate");
+                updateActionDetails("** WARNING ** : No mappings found for this value set - the phenotype results may not be accurate", 2);
             }
             else {
-                updateActionDetails(String.format("  Mapped %d i2b2 ontology terms to %d value set codes",
-                        mappedCount, codeCount));
+                updateActionDetails(String.format("Mapped %d i2b2 ontology terms to %d value set codes",
+                        mappedCount, codeCount), 2);
             }
 
             if (translationResult.UnmappedMembers.size() > 0) {
-                updateActionDetails("  The following value set codes could not be mapped in your i2b2 instance:");
+                updateActionDetails("The following value set codes could not be mapped in your i2b2 instance:", 2);
                 for (Member member : translationResult.UnmappedMembers) {
-                    updateActionDetails(String.format("     %s (%s : %s)", member.getDescription(), member.getCodeSystem(), member.getCode()));
+                    updateActionDetails(String.format("%s (%s : %s)", member.getDescription(), member.getCodeSystem(), member.getCode()), 3);
                 }
+
+                if (translationResult.FilteredOutMembers.size() > 0) {
+                    updateActionDetails(String.format("There were %d concepts filtered out because of the ontology path filter", translationResult.FilteredOutMembers.size()), 2);
+                    if (translationResult.MappedMembers.size() == 0) {
+                        updateActionDetails("** HINT ** : The restrictToOntologyPath setting in your config may have caused all of the i2b2 concepts to get filtered out.  Please review and make sure it is correct.", 2);
+                    }
+                }
+
                 updateActionDetails("");
             }
             valueSetConceptMap.put(valueSet, translationResult.DistinctMappedConcepts);

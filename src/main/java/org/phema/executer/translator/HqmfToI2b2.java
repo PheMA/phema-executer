@@ -227,7 +227,7 @@ public class HqmfToI2b2 extends Observable {
             }
             else {
                 updateActionDetails(String.format("Mapped %d i2b2 ontology terms to %d value set codes",
-                        mappedCount, codeCount), 1);
+                        mappedCount, codeCount), 2);
             }
 
             if (translationResult.UnmappedMembers.size() > 0) {

@@ -20,6 +20,9 @@ import java.util.HashMap;
 public class Runner {
     public static void main(String[] args) {
         try {
+            Version version = new Version();
+            System.out.println(String.format("PhEMA Executer v%s", version.toString()));
+
             if (args == null || args.length == 0) {
                 printUsage();
                 return;
@@ -45,8 +48,6 @@ public class Runner {
     }
 
     private static void printUsage() {
-        Version version = new Version();
-        System.out.println(String.format("PhEMA Executer v%s - Usage", version.toString()));
         System.out.println();
         System.out.println("java -jar phema-executer-lib.jar [config_file]");
         System.out.println();

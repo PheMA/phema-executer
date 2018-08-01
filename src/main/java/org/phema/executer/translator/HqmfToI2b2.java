@@ -6,7 +6,6 @@ import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigOrigin;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.phema.executer.ConsoleProgressObserver;
 import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.hqmf.IDocument;
 import org.phema.executer.hqmf.Parser;
@@ -17,10 +16,7 @@ import org.phema.executer.i2b2.OntologyService;
 import org.phema.executer.i2b2.ProjectManagementService;
 import org.phema.executer.interfaces.IValueSetRepository;
 import org.phema.executer.models.DescriptiveResult;
-import org.phema.executer.models.i2b2.Concept;
-import org.phema.executer.models.i2b2.QueryMaster;
-import org.phema.executer.models.i2b2.TemporalDefinition;
-import org.phema.executer.models.i2b2.TemporalEvent;
+import org.phema.executer.models.i2b2.*;
 import org.phema.executer.util.HttpHelper;
 import org.phema.executer.valueSets.FileValueSetRepository;
 import org.phema.executer.valueSets.models.Member;
@@ -658,19 +654,33 @@ public class HqmfToI2b2 extends Observable {
      * @throws PhemaUserException
      */
     private TemporalDefinition buildI2B2TemporalDefinition(TemporalReference reference) throws PhemaUserException {
-        TemporalDefinition definition = new TemporalDefinition(new TemporalEvent("Event 1", "", "ANY"),
-                new TemporalEvent("Event 2", "", "ANY"), "", "", "");
+        ArrayList<TemporalRelationship> relationships = new ArrayList<TemporalRelationship>();
+        if (reference.getType().equalsIgnoreCase("CONCURRENT") || reference.getType().equalsIgnoreCase("DURING")) {
+            relationships.add(new TemporalRelationship(new TemporalEvent("Event 1", "STARTDATE", "ANY"),
+                            new TemporalEvent("Event 2", "STARTDATE", "ANY"), "LESSEQUAL", "EQUAL", "0", "DAY"));
+            relationships.add(new TemporalRelationship(new TemporalEvent("Event 1", "ENDDATE", "ANY"),
+                            new TemporalEvent("Event 2", "ENDDATE", "ANY"), "LESSEQUAL", "EQUAL", "0", "DAY"));
+        }
+        else {
+            TemporalRelationship relationship = new TemporalRelationship(new TemporalEvent("Event 1", "", "ANY"),
+                    new TemporalEvent("Event 2", "", "ANY"), "", "", "", "");
 
-        Object lowBoundObj = reference.getRange().getLow();
-        Value lowBound = (lowBoundObj instanceof Value ? (Value)lowBoundObj : null);
-        Object highBoundObj = reference.getRange().getHigh();
-        Value highBound = (highBoundObj instanceof Value ? (Value)highBoundObj : null);
+            setTemporalRelationshipTiming(reference.getType(), relationship);
 
-        setTemporalDefinitionTiming(reference.getType(), definition);
-        setTemporalDefinitionOperator(lowBound, highBound, definition);
-        setTemporalDefinitionValue(lowBound, highBound, definition);
+            Range range = reference.getRange();
+            if (range != null) {
+                Object lowBoundObj = reference.getRange().getLow();
+                Value lowBound = (lowBoundObj instanceof Value ? (Value) lowBoundObj : null);
+                Object highBoundObj = reference.getRange().getHigh();
+                Value highBound = (highBoundObj instanceof Value ? (Value) highBoundObj : null);
 
-        return definition;
+                setTemporalRelationshipOperator(lowBound, highBound, relationship);
+                setTemporalRelationshipValue(lowBound, highBound, relationship);
+            }
+            relationships.add(relationship);
+        }
+
+        return new TemporalDefinition(relationships);
     }
 
     /**
@@ -678,33 +688,33 @@ public class HqmfToI2b2 extends Observable {
      * our i2b2 TemporalDefinition object.  This includes both the value and the units.
      * @param lowBound
      * @param highBound
-     * @param definition The TemporalDefinition that will be updated with the correct bound
+     * @param relationship The TemporalRelationship that will be updated with the correct bound
      * @throws PhemaUserException
      */
-    private void setTemporalDefinitionValue(Value lowBound, Value highBound, TemporalDefinition definition) throws PhemaUserException {
+    private void setTemporalRelationshipValue(Value lowBound, Value highBound, TemporalRelationship relationship) throws PhemaUserException {
         // TODO: Support both bounds.  Cheating right now with one.
         Value bound = (lowBound == null ? highBound : lowBound);
 
         if (bound.getUnit().equals("h")) {
-            definition.setUnits("HOUR");
+            relationship.setUnits("HOUR");
         }
         else if (bound.getUnit().equals("d")) {
-            definition.setUnits("DAY");
+            relationship.setUnits("DAY");
         }
         else if (bound.getUnit().equals("a")) {
-            definition.setUnits("YEAR");
+            relationship.setUnits("YEAR");
         }
         else if (bound.getUnit().equals("mo")) {
-            definition.setUnits("MONTH");
+            relationship.setUnits("MONTH");
         }
         else if (bound.getUnit().equals("min")) {
-            definition.setUnits("MINUTE");
+            relationship.setUnits("MINUTE");
         }
         else {
             throw new PhemaUserException(String.format("The PhEMA Executer does not support temporal conditions with a unit of %s", bound.getUnit()));
         }
 
-        definition.setValue(bound.getValue());
+        relationship.setValue(bound.getValue());
     }
 
     /**
@@ -712,16 +722,16 @@ public class HqmfToI2b2 extends Observable {
      * operator used by the i2b2 TemporalDefinition object.
      * @param lowBound
      * @param highBound
-     * @param definition
+     * @param relationship
      * @throws PhemaUserException
      */
-    private void setTemporalDefinitionOperator(Value lowBound, Value highBound, TemporalDefinition definition) throws PhemaUserException {
+    private void setTemporalRelationshipOperator(Value lowBound, Value highBound, TemporalRelationship relationship) throws PhemaUserException {
         if (lowBound != null) {
-            definition.setOperator(lowBound.isForceInclusive() ? "GREATEREQUAL" : "GREATER");
+            relationship.setSpanOperator(lowBound.isForceInclusive() ? "GREATEREQUAL" : "GREATER");
         }
 
         if (highBound != null) {
-            definition.setOperator(highBound.isForceInclusive() ? "LESSEQUAL" : "LESS");
+            relationship.setSpanOperator(highBound.isForceInclusive() ? "LESSEQUAL" : "LESS");
         }
 
         if (lowBound != null && highBound != null) {
@@ -736,64 +746,73 @@ public class HqmfToI2b2 extends Observable {
     /**
      * Convert a type of HQMF temporal relationship into the timing type used by i2b2 between two events.
      * @param temporalType
-     * @param definition
+     * @param relationship
      * @throws PhemaUserException
      */
-    private void setTemporalDefinitionTiming(String temporalType, TemporalDefinition definition) throws PhemaUserException {
+    private void setTemporalRelationshipTiming(String temporalType, TemporalRelationship relationship) throws PhemaUserException {
         if (temporalType.equals("CONCURRENT")) {
         }
         else if (temporalType.equals("DURING")) {
         }
         else if (temporalType.equals("EAE")) {
-            definition.getEvent1().setTiming("ENDDATE");
-            definition.getEvent2().setTiming("ENDDATE");
+            relationship.getEvent1().setTiming("ENDDATE");
+            relationship.getEvent2().setTiming("ENDDATE");
+            relationship.setEventOperator("GREATER");
         }
         else if (temporalType.equals("EAS")) {
-            definition.getEvent1().setTiming("ENDDATE");
-            definition.getEvent2().setTiming("STARTDATE");
+            relationship.getEvent1().setTiming("ENDDATE");
+            relationship.getEvent2().setTiming("STARTDATE");
+            relationship.setEventOperator("GREATER");
         }
         else if (temporalType.equals("EBE")) {
-            definition.getEvent1().setTiming("ENDDATE");
-            definition.getEvent2().setTiming("ENDDATE");
+            relationship.getEvent1().setTiming("ENDDATE");
+            relationship.getEvent2().setTiming("ENDDATE");
+            relationship.setEventOperator("LESS");
         }
         else if (temporalType.equals("EBS")) {
-            definition.getEvent1().setTiming("ENDDATE");
-            definition.getEvent2().setTiming("STARTDATE");
+            relationship.getEvent1().setTiming("ENDDATE");
+            relationship.getEvent2().setTiming("STARTDATE");
+            relationship.setEventOperator("LESS");
         }
         else if (temporalType.equals("ECW")) {
         }
         else if (temporalType.equals("ECWS")) {
-            definition.getEvent1().setTiming("ENDDATE");
-            definition.getEvent2().setTiming("STARTDATE");
+            relationship.getEvent1().setTiming("ENDDATE");
+            relationship.getEvent2().setTiming("STARTDATE");
+            relationship.setEventOperator("EQUAL");
         }
         else if (temporalType.equals("EDU")) {
         }
         else if (temporalType.equals("OVERLAP")) {
         }
         else if (temporalType.equals("SAE")) {
-            definition.getEvent1().setTiming("STARTDATE");
-            definition.getEvent2().setTiming("ENDDATE");
+            relationship.getEvent1().setTiming("STARTDATE");
+            relationship.getEvent2().setTiming("ENDDATE");
+            relationship.setEventOperator("GREATER");
         }
         else if (temporalType.equals("SBE")) {
-            definition.getEvent1().setTiming("STARTDATE");
-            definition.getEvent2().setTiming("ENDDATE");
+            relationship.getEvent1().setTiming("STARTDATE");
+            relationship.getEvent2().setTiming("ENDDATE");
+            relationship.setEventOperator("LESS");
         }
         else if (temporalType.equals("SBS")) {
-            definition.getEvent1().setTiming("STARTDATE");
-            definition.getEvent2().setTiming("STARTDATE");
+            relationship.getEvent1().setTiming("STARTDATE");
+            relationship.getEvent2().setTiming("STARTDATE");
+            relationship.setEventOperator("LESS");
         }
         else if (temporalType.equals("SCW")) {
         }
         else if (temporalType.equals("SCWE")) {
-            definition.getEvent1().setTiming("STARTDATE");
-            definition.getEvent2().setTiming("ENDDATE");
+            relationship.getEvent1().setTiming("STARTDATE");
+            relationship.getEvent2().setTiming("ENDDATE");
+            relationship.setEventOperator("EQUAL");
         }
         else if (temporalType.equals("SDU")) {
         }
 
         // If we don't handle a temporal operator in the above if-else tree, the event timing will be blank.  We will do
         // a single check here for that, and throw an exception if either event timing is not set.
-        if (definition.getEvent1().getTiming().equals("") || definition.getEvent2().getTiming().equals("")) {
+        if (relationship.getEvent1().getTiming().equals("") || relationship.getEvent2().getTiming().equals("")) {
             throw new PhemaUserException(
                     String.format("At this time, the %s temporal operator is not supported for i2b2 queries by PhEMA.", temporalType));
         }

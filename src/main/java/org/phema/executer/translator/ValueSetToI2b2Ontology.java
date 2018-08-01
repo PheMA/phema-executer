@@ -80,11 +80,11 @@ public class ValueSetToI2b2Ontology {
             ArrayList<ArrayList<Concept>> filterResults = filterFoundConcepts(basecodeRule);
             ArrayList<Concept> foundConcepts = filterResults.get(0);
             ArrayList<Concept> filteredOutConcepts = filterResults.get(1);
-            if (foundConcepts.isEmpty()) {
+            if (foundConcepts.isEmpty() && !result.UnmappedMembers.contains(member)) {
                 result.UnmappedMembers.add(member);
             }
             else {
-                result.MappedMembers.put(member, foundConcepts);
+                result.MappedMembers.put(member, distinctConceptList(foundConcepts));
                 concepts.addAll(foundConcepts);
             }
 
@@ -92,7 +92,7 @@ public class ValueSetToI2b2Ontology {
             // report to the user if their filter is perhaps too restrictive.  Note
             // that this is only set if a filter is defined.
             if (!filteredOutConcepts.isEmpty()) {
-                result.FilteredOutMembers.put(member, filteredOutConcepts);
+                result.FilteredOutMembers.put(member, distinctConceptList(filteredOutConcepts));
             }
         }
 

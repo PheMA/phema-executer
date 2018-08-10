@@ -1,6 +1,7 @@
 package org.phema.executer.i2b2;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.phema.executer.DebugLogger;
 import org.phema.executer.UniversalNamespaceCache;
 import org.phema.executer.interfaces.IHttpHelper;
 import org.phema.executer.models.DescriptiveResult;
@@ -44,8 +45,8 @@ public class CRCService extends I2b2ServiceBase {
     private final int MAX_POLLING_WAIT_SECONDS = 120;
 
 
-    public CRCService(ProjectManagementService pmService, I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper) {
-        super(configuration, httpHelper);
+    public CRCService(ProjectManagementService pmService, I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper, DebugLogger debugLogger) {
+        super(configuration, httpHelper, debugLogger);
         this.pmService = pmService;
     }
 

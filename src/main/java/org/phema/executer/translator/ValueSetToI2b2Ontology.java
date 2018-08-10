@@ -2,6 +2,7 @@ package org.phema.executer.translator;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigObject;
+import org.phema.executer.DebugLogger;
 import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.hqmf.v2.DataCriteria;
 import org.phema.executer.hqmf.v2.Range;
@@ -30,6 +31,7 @@ public class ValueSetToI2b2Ontology {
     private ArrayList<I2b2ValueSetRule> valueSetRules;
     private ArrayList<I2b2OverrideRule> overrideRules;
     private OntologyService ontService;
+    private DebugLogger debugLogger;
 
     public class TranslationResult {
         public ArrayList<Member> UnmappedMembers;
@@ -53,6 +55,10 @@ public class ValueSetToI2b2Ontology {
             this.basecode = basecode;
             this.rule = rule;
         }
+    }
+
+    public ValueSetToI2b2Ontology(DebugLogger debugLogger) {
+        this.debugLogger = debugLogger;
     }
 
     /**

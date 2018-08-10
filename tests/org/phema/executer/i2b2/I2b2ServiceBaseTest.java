@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class I2b2ServiceBaseTest {
     class I2B2ServiceBaseStub extends I2b2ServiceBase {
         public I2B2ServiceBaseStub(I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper) {
-            super(configuration, httpHelper);
+            super(configuration, httpHelper, null);
         }
         @Override
         public ProjectManagementService getProjectManagementService() {

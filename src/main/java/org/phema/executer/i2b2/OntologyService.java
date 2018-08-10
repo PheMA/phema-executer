@@ -1,5 +1,6 @@
 package org.phema.executer.i2b2;
 
+import org.phema.executer.DebugLogger;
 import org.phema.executer.UniversalNamespaceCache;
 import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.interfaces.IHttpHelper;
@@ -26,14 +27,16 @@ import java.util.HashMap;
 public class OntologyService extends I2b2ServiceBase {
     private ProjectManagementService pmService = null;
 
-    public OntologyService(ProjectManagementService pmService, I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper) {
-        super(configuration, httpHelper);
+    public OntologyService(ProjectManagementService pmService, I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper, DebugLogger debugLogger) {
+        super(configuration, httpHelper, debugLogger);
         this.pmService = pmService;
     }
 
     public ArrayList<Concept> getCodeInfo(String code) throws PhemaUserException {
+        debugMessage(String.format("Searching for i2b2 code '%s'", code));
         prepareRequest("i2b2_getCodeInfo");
         message = message.replace("{{code}}", code);
+
         Document document = null;
         try {
             document = getMessage();
@@ -45,7 +48,7 @@ public class OntologyService extends I2b2ServiceBase {
         try {
             i2b2Result = httpHelper.postXml(new URI(getProjectManagementService().getCellUrl("ONT") + "getCodeInfo"), document);
         } catch (Exception e) {
-            //return new DescriptiveResult(false, "We were unable to attempt to log in to your i2b2 instance.  Please make sure that you have entered the correct Project Management URL, and that i2b2 is up and running.");
+            throw new PhemaUserException("There was an error when trying to search for an i2b2 ontology code", e);
         }
         XPath xPath = XPathFactory.newInstance().newXPath();
         NamespaceContext context = new UniversalNamespaceCache(i2b2Result, true, "");
@@ -56,6 +59,7 @@ public class OntologyService extends I2b2ServiceBase {
     }
 
     public ArrayList<Concept> getCategories() throws PhemaUserException {
+        debugMessage(String.format("Retrieving all i2b2 categories"));
         prepareRequest("i2b2_getCategories");
         Document document = null;
         try {
@@ -68,7 +72,7 @@ public class OntologyService extends I2b2ServiceBase {
         try {
             i2b2Result = httpHelper.postXml(new URI(getProjectManagementService().getCellUrl("ONT") + "getCategories"), document);
         } catch (Exception e) {
-            //return new DescriptiveResult(false, "We were unable to attempt to log in to your i2b2 instance.  Please make sure that you have entered the correct Project Management URL, and that i2b2 is up and running.");
+            throw new PhemaUserException("There was an error when trying to get the list of i2b2 ontology categories", e);
         }
         XPath xPath = XPathFactory.newInstance().newXPath();
         NamespaceContext context = new UniversalNamespaceCache(i2b2Result, true, "");
@@ -95,21 +99,42 @@ public class OntologyService extends I2b2ServiceBase {
             throw new PhemaUserException("There was an unexpected error when trying to find the list of i2b2 concepts", e);
         }
 
+        debugMessage("List of i2b2 results");
+        debugData("\"key\",\"name\",\"basecode\",\"level\",\"tooltip\",\"synonym_cd\",\"visualattributes\",\"phema_excluded\"");
         for (int index = 0; index < conceptNodes.getLength(); index++) {
             Element conceptElement = (Element) conceptNodes.item(index);
             String key = XmlHelpers.getChildContent(conceptElement, "key", "");
             if (!concepts.containsKey(key)) {
-                concepts.put(key, new Concept(key,
-                        XmlHelpers.getChildContent(conceptElement, "name", ""),
-                        XmlHelpers.getChildContent(conceptElement, "basecode", ""),
-                        XmlHelpers.getChildContentAsInt(conceptElement, "level"),
-                        XmlHelpers.getChildContent(conceptElement, "tooltip", ""),
-                        XmlHelpers.getChildContent(conceptElement, "synonym_cd", "false"),
-                        XmlHelpers.getChildContent(conceptElement, "visualattributes", "")));
+                Concept concept = createConceptFromXml(conceptElement);
+                concepts.put(key, concept);
+                debugLogConcept(concept, false);
+            }
+            else if (debugLogger != null) {
+                // If logging is enabled, write out this concept entry with a flag to show that it's being excluded by PhEMA.
+                Concept concept = createConceptFromXml(conceptElement);
+                debugLogConcept(concept, true);
             }
         }
+        debugData("");
 
         return new ArrayList<>(concepts.values());
+    }
+
+    private Concept createConceptFromXml(Element conceptElement) throws PhemaUserException {
+        Concept concept = new Concept(XmlHelpers.getChildContent(conceptElement, "key", ""),
+                XmlHelpers.getChildContent(conceptElement, "name", ""),
+                XmlHelpers.getChildContent(conceptElement, "basecode", ""),
+                XmlHelpers.getChildContentAsInt(conceptElement, "level"),
+                XmlHelpers.getChildContent(conceptElement, "tooltip", ""),
+                XmlHelpers.getChildContent(conceptElement, "synonym_cd", "false"),
+                XmlHelpers.getChildContent(conceptElement, "visualattributes", ""));
+        return concept;
+    }
+
+    private void debugLogConcept(Concept concept, boolean isExcluded) {
+        debugData(String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"",
+                concept.getKey(), concept.getName(), concept.getBaseCode(), concept.getHierarchyLevel(),
+                concept.getTooltip(), concept.isSynonym(), concept.getVisualAttributes(), isExcluded));
     }
 
     @Override

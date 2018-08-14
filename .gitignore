@@ -9,6 +9,9 @@
 # Target objects
 target/
 
+# PhEMA cache files
+phema-cache/**
+
 # Sensitive or high-churn files:
 .idea/**/dataSources/
 .idea/**/dataSources.ids

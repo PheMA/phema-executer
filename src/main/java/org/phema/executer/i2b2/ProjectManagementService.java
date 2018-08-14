@@ -1,5 +1,6 @@
 package org.phema.executer.i2b2;
 
+import org.phema.executer.DebugLogger;
 import org.phema.executer.UniversalNamespaceCache;
 import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.interfaces.IHttpHelper;
@@ -15,6 +16,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,8 +30,8 @@ public class ProjectManagementService extends I2b2ServiceBase {
     private String authenticationToken;
     private HashMap<String, String> cellData = new HashMap<>();
 
-    public ProjectManagementService(I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper) {
-        super(configuration, httpHelper);
+    public ProjectManagementService(I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper, DebugLogger debugLogger) {
+        super(configuration, httpHelper, debugLogger);
     }
 
     public DescriptiveResult login() {
@@ -119,16 +121,21 @@ public class ProjectManagementService extends I2b2ServiceBase {
             return new DescriptiveResult(false, "The user credentials provided are valid, but there are no i2b2 cells available for that user.");
         }
 
+        debugMessage(String.format("Configured i2b2 cells for project: %s", configuration.getI2b2Project()));
         for (int index = 0; index < cells.getLength(); index++) {
             Node cellNode = cells.item(index);
             if (cellNode == null || !(cellNode instanceof Element)) {
                 continue;
             }
 
-            Element cellElement = (Element)cellNode;
-            cellData.put(cellElement.getAttribute("id"),
+            Element cellElement = (Element) cellNode;
+            String cellId = cellElement.getAttribute("id");
+            cellData.put(cellId,
                     XmlHelpers.getChildContent(cellElement, "url", ""));
+
+            debugMessage(String.format("   %s - %s", cellId, cellData.get(cellId)));
         }
+
 
         setAuthenticationToken(tokenValue);
         return new DescriptiveResult(true);

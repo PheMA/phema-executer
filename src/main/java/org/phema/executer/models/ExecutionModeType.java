@@ -4,7 +4,7 @@ package org.phema.executer.models;
  * Created by Luke Rasmussen on 7/17/17.
  */
 public enum ExecutionModeType {
-    OPTIMIZED(1), DEBUG(2);
+    NORMAL(1), DEBUG(2);
 
     private final int value;
 
@@ -14,5 +14,17 @@ public enum ExecutionModeType {
 
     public int getValue() {
         return value;
+    }
+
+    public static ExecutionModeType fromString(String value) {
+        if (value == null || value.isEmpty()) {
+            return NORMAL;
+        }
+
+        if (value.equalsIgnoreCase("debug")) {
+            return DEBUG;
+        }
+
+        return NORMAL;
     }
 }

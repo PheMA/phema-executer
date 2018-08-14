@@ -6,7 +6,8 @@ import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigOrigin;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.phema.executer.ConsoleProgressObserver;
+import org.phema.executer.DebugLogger;
+import org.phema.executer.configuration.ExecutionConfiguration;
 import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.hqmf.IDocument;
 import org.phema.executer.hqmf.Parser;
@@ -17,10 +18,8 @@ import org.phema.executer.i2b2.OntologyService;
 import org.phema.executer.i2b2.ProjectManagementService;
 import org.phema.executer.interfaces.IValueSetRepository;
 import org.phema.executer.models.DescriptiveResult;
-import org.phema.executer.models.i2b2.Concept;
-import org.phema.executer.models.i2b2.QueryMaster;
-import org.phema.executer.models.i2b2.TemporalDefinition;
-import org.phema.executer.models.i2b2.TemporalEvent;
+import org.phema.executer.models.ExecutionModeType;
+import org.phema.executer.models.i2b2.*;
 import org.phema.executer.util.HttpHelper;
 import org.phema.executer.valueSets.FileValueSetRepository;
 import org.phema.executer.valueSets.models.Member;
@@ -37,6 +36,7 @@ import java.util.stream.Collectors;
 public class HqmfToI2b2 extends Observable {
     private HashMap<DataCriteria, QueryMaster> criteriaQueryMap = null;
     private List<QueryMaster> queries = null;
+    private DebugLogger debugLogger = null;
 
     public Observer getLogger() {
         return logger;
@@ -65,7 +65,7 @@ public class HqmfToI2b2 extends Observable {
             updateActionEnd("Configuration settings have been loaded");
 
             updateActionStart("Finding HQMF file path");
-            String hqmfFilePath = getFilePathRelativeToConfigFile(config.getObject("execution"), "phenotypeDefinition");
+            String hqmfFilePath = ExecutionConfiguration.getFilePathRelativeToConfigFile(config.getObject("execution"), "phenotypeDefinition");
             updateActionDetails(String.format("Using HQMF file located at %s", hqmfFilePath));
             File hqmfFile = new File(hqmfFilePath);
             updateActionEnd("Found HQMF file path");
@@ -90,6 +90,13 @@ public class HqmfToI2b2 extends Observable {
         }
 
         return true;
+    }
+
+    public void close() {
+        if (debugLogger != null) {
+            debugLogger.close();
+            debugLogger = null;
+        }
     }
 
     public void translate(IDocument document, Config config) throws PhemaUserException {
@@ -122,15 +129,27 @@ public class HqmfToI2b2 extends Observable {
         }
         updateActionEnd("i2b2 configuration details have been loaded.");
 
-        boolean trustAllSsl = false;
-        if (config.hasPath("execution.trustAllSsl")) {
-            trustAllSsl = config.getBoolean("execution.trustAllSsl");
-        }
-        else {
-            trustAllSsl = false;
-            updateProgress("No value specified for trusting SSL certificates - defaulting to false");
+        if (!configuration.getExecutionEngineName().equalsIgnoreCase("i2b2")) {
+            throw new PhemaUserException("Currently the PhEMA Executer only works with i2b2.  Your configuration file has specified 'engine' as '" + configuration.getExecutionEngineName() + "'");
         }
 
+        boolean debugMode = (configuration.getMode() == ExecutionModeType.DEBUG);
+        if (debugMode) {
+            updateProgress(String.format("DEBUG mode is enabled - additional logging will be done to the '%s' directory in the same location as your configuration file.",
+                    DebugLogger.LOGGING_DIRECTORY));
+            try {
+                debugLogger = new DebugLogger();
+                debugLogger.initialize(configuration.getConfigBaseDirectory());
+            }
+            catch (PhemaUserException pue) {
+                throw pue;
+            }
+            catch (Exception exc) {
+                throw new PhemaUserException("An error was detected when trying to enable debug logging.  Please review the output log for more information.");
+            }
+        }
+
+        boolean trustAllSsl = configuration.isTrustAllSsl();
         HttpHelper httpHelper = new HttpHelper(trustAllSsl);
         if (trustAllSsl) {
             updateProgress("Implicitly trusting all certificates used in SSL connections");
@@ -141,27 +160,19 @@ public class HqmfToI2b2 extends Observable {
         // Create an instance of the project management service, and ensure that we are
         // properly authenticated
         updateActionStart("Logging into the i2b2 Project Manager");
-        ProjectManagementService pmService = new ProjectManagementService(configuration, httpHelper);
+        ProjectManagementService pmService = new ProjectManagementService(configuration, httpHelper, debugLogger);
         result = pmService.login();
         if (!result.isSuccess()) {
             throw new PhemaUserException(result);
         }
         updateActionEnd("Successfully connected to i2b2");
 
-        OntologyService ontService = new OntologyService(pmService, configuration, httpHelper);
+        OntologyService ontService = new OntologyService(pmService, configuration, httpHelper, debugLogger);
 
         // Build the full list of value set repositories that we are configured to use
         // for this phenotype.
         updateActionStart("Initializing value set repositories");
-        ArrayList<IValueSetRepository> valueSetRepositories = null;
-        try {
-            valueSetRepositories = processValueSets(config);
-        } catch (PhemaUserException pue) {
-            throw pue;  // Re-throw the user-facing exception as-is.
-        } catch (Exception e) {
-            // For all other types of exceptions, wrap it in a more user-friendly container.
-            throw new PhemaUserException("There was an error when trying to load the configuration details for your value set repositories.  Please double-check that you have specified all of the necessary configuration information, and that the file is formatted correctly.", e);
-        }
+        ArrayList<IValueSetRepository> valueSetRepositories = configuration.getValueSetRepositories();
         updateActionEnd("Value set repositories are now loaded");
 
         // Make sure at least one is loaded
@@ -171,7 +182,7 @@ public class HqmfToI2b2 extends Observable {
 
         // Now get the mapping configuration for the value sets.
         updateActionStart("Initializing the mapping logic between value sets and the i2b2 ontology");
-        ValueSetToI2b2Ontology valueSetTranslator = new ValueSetToI2b2Ontology();
+        ValueSetToI2b2Ontology valueSetTranslator = new ValueSetToI2b2Ontology(debugLogger);
         try {
             valueSetTranslator.initialize(config, ontService);
         } catch (PhemaUserException pue) {
@@ -249,7 +260,7 @@ public class HqmfToI2b2 extends Observable {
         }
         updateActionEnd("Finished mapping value set codes to i2b2 ontology");
 
-        CRCService crcService = new CRCService(pmService, configuration, httpHelper);
+        CRCService crcService = new CRCService(pmService, configuration, httpHelper, debugLogger);
         crcService.addObserver(getLogger());
 
         // Create query definitions for all of the underlying source data criteria.  Once saved, these will be combined
@@ -573,104 +584,39 @@ public class HqmfToI2b2 extends Observable {
     }
 
     /**
-     * Creates a FileValueSetRepository for a given configuration object
-     * @param config ConfigObject containing all information needed to create the FileValueSetRepository
-     * @return FileValueSetRepository created from the ConfigObject
-     * @throws Exception
-     */
-    private FileValueSetRepository createFileValueSetRepository(ConfigObject config) throws Exception {
-        if (!config.containsKey("format")) {
-            throw new Exception("A value set definition must contain a 'format' field of 'CSV' or 'VSAC'");
-        }
-
-        if (!config.containsKey("path")) {
-            throw new Exception("A value set definition must contain a 'path' field");
-        }
-
-        String path = config.get("path").unwrapped().toString();
-        updateActionStart(String.format("Creating a value set repository from the file '%s'", path));
-
-        String fullFilePath = getFilePathRelativeToConfigFile(config, "path");
-        updateActionDetails(String.format("Repository path set to '%s'", fullFilePath));
-
-        FileValueSetRepository repository = new FileValueSetRepository();
-        repository.initialize(new HashMap<String, String>(){{ put(FileValueSetRepository.Parameters.FilePath,
-                fullFilePath); }});
-        updateActionEnd("Created the value set file repository");
-        return repository;
-    }
-
-    /**
-     * Utility function to get a fully qualified file path in relationship to the location of the configuration
-     * file.
-     * @param config
-     * @param fileNameKey
-     * @return String
-     */
-    private String getFilePathRelativeToConfigFile(ConfigObject config, String fileNameKey) {
-        ConfigOrigin origin = config.origin();
-        URL configFilePath = origin.url();
-        File configFile = new File(configFilePath.getFile());
-        String baseDirectory = configFile.getParent();
-
-        String path = config.get(fileNameKey).unwrapped().toString();
-        String fullFilePath = (new File(baseDirectory, path)).getAbsolutePath();
-        return fullFilePath;
-    }
-
-    /**
-     * Create all configured value sets for the phenotype definition, given a configuration object
-     * @param config The Config object that contains all of the value set definitions
-     * @return ArrayList&lt;IValueSetRepository&gt; containing all configured value sets
-     * @throws Exception
-     */
-    private ArrayList<IValueSetRepository> processValueSets(Config config) throws Exception {
-        ArrayList<IValueSetRepository> valueSetRepositories = new ArrayList<>();
-
-        List<? extends ConfigObject> valueSetObjects = config.getObjectList("execution.valueSets");
-        if (valueSetObjects == null || valueSetObjects.size() == 0) {
-            throw new PhemaUserException("You must specify at least one value set for the phenotype to execute.");
-        }
-
-        for (ConfigObject valueSetObject : valueSetObjects) {
-            if (!valueSetObject.containsKey("type")) {
-                throw new PhemaUserException("A value set definition must contain a 'type' field of 'File' or 'CTS2'");
-            }
-
-            String valueSetType = valueSetObject.get("type").unwrapped().toString();
-            switch (valueSetType) {
-                case "File":
-                    IValueSetRepository repository = createFileValueSetRepository(valueSetObject);
-                    valueSetRepositories.add(repository);
-                    break;
-                default:
-                    throw new PhemaUserException(String.format("A value set type of '%s' is not currently supported.", valueSetType));
-            }
-        }
-
-        return valueSetRepositories;
-    }
-
-    /**
      * Build a TemporalDefinition used within an i2b2 query, given an HQMF TemporalReference
      * @param reference
      * @return
      * @throws PhemaUserException
      */
     private TemporalDefinition buildI2B2TemporalDefinition(TemporalReference reference) throws PhemaUserException {
-        TemporalDefinition definition = new TemporalDefinition(new TemporalEvent("Event 1", "", "ANY"),
-                new TemporalEvent("Event 2", "", "ANY"), "", "", "");
+        ArrayList<TemporalRelationship> relationships = new ArrayList<TemporalRelationship>();
+        if (reference.getType().equalsIgnoreCase("CONCURRENT") || reference.getType().equalsIgnoreCase("DURING")) {
+            relationships.add(new TemporalRelationship(new TemporalEvent("Event 1", "STARTDATE", "ANY"),
+                            new TemporalEvent("Event 2", "STARTDATE", "ANY"), "LESSEQUAL", "EQUAL", "0", "DAY"));
+            relationships.add(new TemporalRelationship(new TemporalEvent("Event 1", "ENDDATE", "ANY"),
+                            new TemporalEvent("Event 2", "ENDDATE", "ANY"), "LESSEQUAL", "EQUAL", "0", "DAY"));
+        }
+        else {
+            TemporalRelationship relationship = new TemporalRelationship(new TemporalEvent("Event 1", "", "ANY"),
+                    new TemporalEvent("Event 2", "", "ANY"), "", "", "", "");
 
-        Object lowBoundObj = reference.getRange().getLow();
-        Value lowBound = (lowBoundObj instanceof Value ? (Value)lowBoundObj : null);
-        Object highBoundObj = reference.getRange().getHigh();
-        Value highBound = (highBoundObj instanceof Value ? (Value)highBoundObj : null);
+            setTemporalRelationshipTiming(reference.getType(), relationship);
 
-        setTemporalDefinitionTiming(reference.getType(), definition);
-        setTemporalDefinitionOperator(lowBound, highBound, definition);
-        setTemporalDefinitionValue(lowBound, highBound, definition);
+            Range range = reference.getRange();
+            if (range != null) {
+                Object lowBoundObj = reference.getRange().getLow();
+                Value lowBound = (lowBoundObj instanceof Value ? (Value) lowBoundObj : null);
+                Object highBoundObj = reference.getRange().getHigh();
+                Value highBound = (highBoundObj instanceof Value ? (Value) highBoundObj : null);
 
-        return definition;
+                setTemporalRelationshipOperator(lowBound, highBound, relationship);
+                setTemporalRelationshipValue(lowBound, highBound, relationship);
+            }
+            relationships.add(relationship);
+        }
+
+        return new TemporalDefinition(relationships);
     }
 
     /**
@@ -678,33 +624,33 @@ public class HqmfToI2b2 extends Observable {
      * our i2b2 TemporalDefinition object.  This includes both the value and the units.
      * @param lowBound
      * @param highBound
-     * @param definition The TemporalDefinition that will be updated with the correct bound
+     * @param relationship The TemporalRelationship that will be updated with the correct bound
      * @throws PhemaUserException
      */
-    private void setTemporalDefinitionValue(Value lowBound, Value highBound, TemporalDefinition definition) throws PhemaUserException {
+    private void setTemporalRelationshipValue(Value lowBound, Value highBound, TemporalRelationship relationship) throws PhemaUserException {
         // TODO: Support both bounds.  Cheating right now with one.
         Value bound = (lowBound == null ? highBound : lowBound);
 
         if (bound.getUnit().equals("h")) {
-            definition.setUnits("HOUR");
+            relationship.setUnits("HOUR");
         }
         else if (bound.getUnit().equals("d")) {
-            definition.setUnits("DAY");
+            relationship.setUnits("DAY");
         }
         else if (bound.getUnit().equals("a")) {
-            definition.setUnits("YEAR");
+            relationship.setUnits("YEAR");
         }
         else if (bound.getUnit().equals("mo")) {
-            definition.setUnits("MONTH");
+            relationship.setUnits("MONTH");
         }
         else if (bound.getUnit().equals("min")) {
-            definition.setUnits("MINUTE");
+            relationship.setUnits("MINUTE");
         }
         else {
             throw new PhemaUserException(String.format("The PhEMA Executer does not support temporal conditions with a unit of %s", bound.getUnit()));
         }
 
-        definition.setValue(bound.getValue());
+        relationship.setValue(bound.getValue());
     }
 
     /**
@@ -712,16 +658,16 @@ public class HqmfToI2b2 extends Observable {
      * operator used by the i2b2 TemporalDefinition object.
      * @param lowBound
      * @param highBound
-     * @param definition
+     * @param relationship
      * @throws PhemaUserException
      */
-    private void setTemporalDefinitionOperator(Value lowBound, Value highBound, TemporalDefinition definition) throws PhemaUserException {
+    private void setTemporalRelationshipOperator(Value lowBound, Value highBound, TemporalRelationship relationship) throws PhemaUserException {
         if (lowBound != null) {
-            definition.setOperator(lowBound.isForceInclusive() ? "GREATEREQUAL" : "GREATER");
+            relationship.setSpanOperator(lowBound.isForceInclusive() ? "GREATEREQUAL" : "GREATER");
         }
 
         if (highBound != null) {
-            definition.setOperator(highBound.isForceInclusive() ? "LESSEQUAL" : "LESS");
+            relationship.setSpanOperator(highBound.isForceInclusive() ? "LESSEQUAL" : "LESS");
         }
 
         if (lowBound != null && highBound != null) {
@@ -736,64 +682,73 @@ public class HqmfToI2b2 extends Observable {
     /**
      * Convert a type of HQMF temporal relationship into the timing type used by i2b2 between two events.
      * @param temporalType
-     * @param definition
+     * @param relationship
      * @throws PhemaUserException
      */
-    private void setTemporalDefinitionTiming(String temporalType, TemporalDefinition definition) throws PhemaUserException {
+    private void setTemporalRelationshipTiming(String temporalType, TemporalRelationship relationship) throws PhemaUserException {
         if (temporalType.equals("CONCURRENT")) {
         }
         else if (temporalType.equals("DURING")) {
         }
         else if (temporalType.equals("EAE")) {
-            definition.getEvent1().setTiming("ENDDATE");
-            definition.getEvent2().setTiming("ENDDATE");
+            relationship.getEvent1().setTiming("ENDDATE");
+            relationship.getEvent2().setTiming("ENDDATE");
+            relationship.setEventOperator("GREATER");
         }
         else if (temporalType.equals("EAS")) {
-            definition.getEvent1().setTiming("ENDDATE");
-            definition.getEvent2().setTiming("STARTDATE");
+            relationship.getEvent1().setTiming("ENDDATE");
+            relationship.getEvent2().setTiming("STARTDATE");
+            relationship.setEventOperator("GREATER");
         }
         else if (temporalType.equals("EBE")) {
-            definition.getEvent1().setTiming("ENDDATE");
-            definition.getEvent2().setTiming("ENDDATE");
+            relationship.getEvent1().setTiming("ENDDATE");
+            relationship.getEvent2().setTiming("ENDDATE");
+            relationship.setEventOperator("LESS");
         }
         else if (temporalType.equals("EBS")) {
-            definition.getEvent1().setTiming("ENDDATE");
-            definition.getEvent2().setTiming("STARTDATE");
+            relationship.getEvent1().setTiming("ENDDATE");
+            relationship.getEvent2().setTiming("STARTDATE");
+            relationship.setEventOperator("LESS");
         }
         else if (temporalType.equals("ECW")) {
         }
         else if (temporalType.equals("ECWS")) {
-            definition.getEvent1().setTiming("ENDDATE");
-            definition.getEvent2().setTiming("STARTDATE");
+            relationship.getEvent1().setTiming("ENDDATE");
+            relationship.getEvent2().setTiming("STARTDATE");
+            relationship.setEventOperator("EQUAL");
         }
         else if (temporalType.equals("EDU")) {
         }
         else if (temporalType.equals("OVERLAP")) {
         }
         else if (temporalType.equals("SAE")) {
-            definition.getEvent1().setTiming("STARTDATE");
-            definition.getEvent2().setTiming("ENDDATE");
+            relationship.getEvent1().setTiming("STARTDATE");
+            relationship.getEvent2().setTiming("ENDDATE");
+            relationship.setEventOperator("GREATER");
         }
         else if (temporalType.equals("SBE")) {
-            definition.getEvent1().setTiming("STARTDATE");
-            definition.getEvent2().setTiming("ENDDATE");
+            relationship.getEvent1().setTiming("STARTDATE");
+            relationship.getEvent2().setTiming("ENDDATE");
+            relationship.setEventOperator("LESS");
         }
         else if (temporalType.equals("SBS")) {
-            definition.getEvent1().setTiming("STARTDATE");
-            definition.getEvent2().setTiming("STARTDATE");
+            relationship.getEvent1().setTiming("STARTDATE");
+            relationship.getEvent2().setTiming("STARTDATE");
+            relationship.setEventOperator("LESS");
         }
         else if (temporalType.equals("SCW")) {
         }
         else if (temporalType.equals("SCWE")) {
-            definition.getEvent1().setTiming("STARTDATE");
-            definition.getEvent2().setTiming("ENDDATE");
+            relationship.getEvent1().setTiming("STARTDATE");
+            relationship.getEvent2().setTiming("ENDDATE");
+            relationship.setEventOperator("EQUAL");
         }
         else if (temporalType.equals("SDU")) {
         }
 
         // If we don't handle a temporal operator in the above if-else tree, the event timing will be blank.  We will do
         // a single check here for that, and throw an exception if either event timing is not set.
-        if (definition.getEvent1().getTiming().equals("") || definition.getEvent2().getTiming().equals("")) {
+        if (relationship.getEvent1().getTiming().equals("") || relationship.getEvent2().getTiming().equals("")) {
             throw new PhemaUserException(
                     String.format("At this time, the %s temporal operator is not supported for i2b2 queries by PhEMA.", temporalType));
         }

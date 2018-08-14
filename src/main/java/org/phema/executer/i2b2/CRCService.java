@@ -152,6 +152,10 @@ public class CRCService extends I2b2ServiceBase {
     }
 
     public QueryMaster runQueryInstance(String queryName, String panelXml, String queryTiming, boolean returnResults) throws Exception {
+        debugMessage(String.format("Running query '%s' with the following panel XML", queryName));
+        debugData(panelXml);
+        debugData("");
+
         loadRequest("i2b2_runQueryInstance");
         message = replaceCommonMessagePlaceholders(message);
         message = message.replace("{{query_name}}", queryName);

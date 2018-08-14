@@ -40,7 +40,7 @@ public class DebugLogger {
             throw new PhemaUserException(String.format("We were unable to create the debug logging directory at %s.  Please check your configuration, or disable debug logging", fullLoggingPath.getAbsolutePath()));
         }
 
-        verboseLoggingWriter = new BufferedWriter(new FileWriter(new File(fullLoggingPath.getAbsolutePath(), VERBOSE_LOGGING_FILE), true));
+        verboseLoggingWriter = new BufferedWriter(new FileWriter(new File(fullLoggingPath.getAbsolutePath(), VERBOSE_LOGGING_FILE), false));
 
         startLog();
     }

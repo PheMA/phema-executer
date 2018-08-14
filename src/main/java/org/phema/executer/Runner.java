@@ -19,6 +19,7 @@ import java.util.HashMap;
  */
 public class Runner {
     public static void main(String[] args) {
+        org.phema.executer.translator.HqmfToI2b2 translator = null;
         try {
             Version version = new Version();
             System.out.println(String.format("PhEMA Executer v%s", version.toString()));
@@ -37,13 +38,18 @@ public class Runner {
             ConsoleProgressObserver consoleLogger = new ConsoleProgressObserver();
 
             long startTime = System.nanoTime();
-            org.phema.executer.translator.HqmfToI2b2 translator = new org.phema.executer.translator.HqmfToI2b2();
+            translator = new org.phema.executer.translator.HqmfToI2b2();
             translator.setLogger(consoleLogger);
             translator.execute(configFile);
             long endTime = System.nanoTime();
             System.out.printf("\r\nElapsed execution time in seconds: %.2f\r\n", ((endTime - startTime) / 1000000000.0));
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        finally {
+            if (translator != null) {
+                translator.close();
+            }
         }
     }
 

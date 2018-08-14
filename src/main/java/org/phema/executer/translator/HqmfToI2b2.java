@@ -6,6 +6,8 @@ import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigOrigin;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.phema.executer.DebugLogger;
+import org.phema.executer.configuration.ExecutionConfiguration;
 import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.hqmf.IDocument;
 import org.phema.executer.hqmf.Parser;
@@ -16,6 +18,7 @@ import org.phema.executer.i2b2.OntologyService;
 import org.phema.executer.i2b2.ProjectManagementService;
 import org.phema.executer.interfaces.IValueSetRepository;
 import org.phema.executer.models.DescriptiveResult;
+import org.phema.executer.models.ExecutionModeType;
 import org.phema.executer.models.i2b2.*;
 import org.phema.executer.util.HttpHelper;
 import org.phema.executer.valueSets.FileValueSetRepository;
@@ -33,6 +36,7 @@ import java.util.stream.Collectors;
 public class HqmfToI2b2 extends Observable {
     private HashMap<DataCriteria, QueryMaster> criteriaQueryMap = null;
     private List<QueryMaster> queries = null;
+    private DebugLogger debugLogger = null;
 
     public Observer getLogger() {
         return logger;
@@ -61,7 +65,7 @@ public class HqmfToI2b2 extends Observable {
             updateActionEnd("Configuration settings have been loaded");
 
             updateActionStart("Finding HQMF file path");
-            String hqmfFilePath = getFilePathRelativeToConfigFile(config.getObject("execution"), "phenotypeDefinition");
+            String hqmfFilePath = ExecutionConfiguration.getFilePathRelativeToConfigFile(config.getObject("execution"), "phenotypeDefinition");
             updateActionDetails(String.format("Using HQMF file located at %s", hqmfFilePath));
             File hqmfFile = new File(hqmfFilePath);
             updateActionEnd("Found HQMF file path");
@@ -86,6 +90,13 @@ public class HqmfToI2b2 extends Observable {
         }
 
         return true;
+    }
+
+    public void close() {
+        if (debugLogger != null) {
+            debugLogger.close();
+            debugLogger = null;
+        }
     }
 
     public void translate(IDocument document, Config config) throws PhemaUserException {
@@ -118,15 +129,27 @@ public class HqmfToI2b2 extends Observable {
         }
         updateActionEnd("i2b2 configuration details have been loaded.");
 
-        boolean trustAllSsl = false;
-        if (config.hasPath("execution.trustAllSsl")) {
-            trustAllSsl = config.getBoolean("execution.trustAllSsl");
-        }
-        else {
-            trustAllSsl = false;
-            updateProgress("No value specified for trusting SSL certificates - defaulting to false");
+        if (!configuration.getExecutionEngineName().equalsIgnoreCase("i2b2")) {
+            throw new PhemaUserException("Currently the PhEMA Executer only works with i2b2.  Your configuration file has specified 'engine' as '" + configuration.getExecutionEngineName() + "'");
         }
 
+        boolean debugMode = (configuration.getMode() == ExecutionModeType.DEBUG);
+        if (debugMode) {
+            updateProgress(String.format("DEBUG mode is enabled - additional logging will be done to the '%s' directory in the same location as your configuration file.",
+                    DebugLogger.LOGGING_DIRECTORY));
+            try {
+                debugLogger = new DebugLogger();
+                debugLogger.initialize(configuration.getConfigBaseDirectory());
+            }
+            catch (PhemaUserException pue) {
+                throw pue;
+            }
+            catch (Exception exc) {
+                throw new PhemaUserException("An error was detected when trying to enable debug logging.  Please review the output log for more information.");
+            }
+        }
+
+        boolean trustAllSsl = configuration.isTrustAllSsl();
         HttpHelper httpHelper = new HttpHelper(trustAllSsl);
         if (trustAllSsl) {
             updateProgress("Implicitly trusting all certificates used in SSL connections");
@@ -137,27 +160,19 @@ public class HqmfToI2b2 extends Observable {
         // Create an instance of the project management service, and ensure that we are
         // properly authenticated
         updateActionStart("Logging into the i2b2 Project Manager");
-        ProjectManagementService pmService = new ProjectManagementService(configuration, httpHelper);
+        ProjectManagementService pmService = new ProjectManagementService(configuration, httpHelper, debugLogger);
         result = pmService.login();
         if (!result.isSuccess()) {
             throw new PhemaUserException(result);
         }
         updateActionEnd("Successfully connected to i2b2");
 
-        OntologyService ontService = new OntologyService(pmService, configuration, httpHelper);
+        OntologyService ontService = new OntologyService(pmService, configuration, httpHelper, debugLogger);
 
         // Build the full list of value set repositories that we are configured to use
         // for this phenotype.
         updateActionStart("Initializing value set repositories");
-        ArrayList<IValueSetRepository> valueSetRepositories = null;
-        try {
-            valueSetRepositories = processValueSets(config);
-        } catch (PhemaUserException pue) {
-            throw pue;  // Re-throw the user-facing exception as-is.
-        } catch (Exception e) {
-            // For all other types of exceptions, wrap it in a more user-friendly container.
-            throw new PhemaUserException("There was an error when trying to load the configuration details for your value set repositories.  Please double-check that you have specified all of the necessary configuration information, and that the file is formatted correctly.", e);
-        }
+        ArrayList<IValueSetRepository> valueSetRepositories = configuration.getValueSetRepositories();
         updateActionEnd("Value set repositories are now loaded");
 
         // Make sure at least one is loaded
@@ -167,7 +182,7 @@ public class HqmfToI2b2 extends Observable {
 
         // Now get the mapping configuration for the value sets.
         updateActionStart("Initializing the mapping logic between value sets and the i2b2 ontology");
-        ValueSetToI2b2Ontology valueSetTranslator = new ValueSetToI2b2Ontology();
+        ValueSetToI2b2Ontology valueSetTranslator = new ValueSetToI2b2Ontology(debugLogger);
         try {
             valueSetTranslator.initialize(config, ontService);
         } catch (PhemaUserException pue) {
@@ -245,7 +260,7 @@ public class HqmfToI2b2 extends Observable {
         }
         updateActionEnd("Finished mapping value set codes to i2b2 ontology");
 
-        CRCService crcService = new CRCService(pmService, configuration, httpHelper);
+        CRCService crcService = new CRCService(pmService, configuration, httpHelper, debugLogger);
         crcService.addObserver(getLogger());
 
         // Create query definitions for all of the underlying source data criteria.  Once saved, these will be combined
@@ -566,85 +581,6 @@ public class HqmfToI2b2 extends Observable {
         }
 
         return null;
-    }
-
-    /**
-     * Creates a FileValueSetRepository for a given configuration object
-     * @param config ConfigObject containing all information needed to create the FileValueSetRepository
-     * @return FileValueSetRepository created from the ConfigObject
-     * @throws Exception
-     */
-    private FileValueSetRepository createFileValueSetRepository(ConfigObject config) throws Exception {
-        if (!config.containsKey("format")) {
-            throw new Exception("A value set definition must contain a 'format' field of 'CSV' or 'VSAC'");
-        }
-
-        if (!config.containsKey("path")) {
-            throw new Exception("A value set definition must contain a 'path' field");
-        }
-
-        String path = config.get("path").unwrapped().toString();
-        updateActionStart(String.format("Creating a value set repository from the file '%s'", path));
-
-        String fullFilePath = getFilePathRelativeToConfigFile(config, "path");
-        updateActionDetails(String.format("Repository path set to '%s'", fullFilePath));
-
-        FileValueSetRepository repository = new FileValueSetRepository();
-        repository.initialize(new HashMap<String, String>(){{ put(FileValueSetRepository.Parameters.FilePath,
-                fullFilePath); }});
-        updateActionEnd("Created the value set file repository");
-        return repository;
-    }
-
-    /**
-     * Utility function to get a fully qualified file path in relationship to the location of the configuration
-     * file.
-     * @param config
-     * @param fileNameKey
-     * @return String
-     */
-    private String getFilePathRelativeToConfigFile(ConfigObject config, String fileNameKey) {
-        ConfigOrigin origin = config.origin();
-        URL configFilePath = origin.url();
-        File configFile = new File(configFilePath.getFile());
-        String baseDirectory = configFile.getParent();
-
-        String path = config.get(fileNameKey).unwrapped().toString();
-        String fullFilePath = (new File(baseDirectory, path)).getAbsolutePath();
-        return fullFilePath;
-    }
-
-    /**
-     * Create all configured value sets for the phenotype definition, given a configuration object
-     * @param config The Config object that contains all of the value set definitions
-     * @return ArrayList&lt;IValueSetRepository&gt; containing all configured value sets
-     * @throws Exception
-     */
-    private ArrayList<IValueSetRepository> processValueSets(Config config) throws Exception {
-        ArrayList<IValueSetRepository> valueSetRepositories = new ArrayList<>();
-
-        List<? extends ConfigObject> valueSetObjects = config.getObjectList("execution.valueSets");
-        if (valueSetObjects == null || valueSetObjects.size() == 0) {
-            throw new PhemaUserException("You must specify at least one value set for the phenotype to execute.");
-        }
-
-        for (ConfigObject valueSetObject : valueSetObjects) {
-            if (!valueSetObject.containsKey("type")) {
-                throw new PhemaUserException("A value set definition must contain a 'type' field of 'File' or 'CTS2'");
-            }
-
-            String valueSetType = valueSetObject.get("type").unwrapped().toString();
-            switch (valueSetType) {
-                case "File":
-                    IValueSetRepository repository = createFileValueSetRepository(valueSetObject);
-                    valueSetRepositories.add(repository);
-                    break;
-                default:
-                    throw new PhemaUserException(String.format("A value set type of '%s' is not currently supported.", valueSetType));
-            }
-        }
-
-        return valueSetRepositories;
     }
 
     /**

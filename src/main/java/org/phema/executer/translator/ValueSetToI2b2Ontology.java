@@ -2,6 +2,7 @@ package org.phema.executer.translator;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigObject;
+import org.phema.executer.DebugLogger;
 import org.phema.executer.exception.PhemaUserException;
 import org.phema.executer.hqmf.v2.DataCriteria;
 import org.phema.executer.hqmf.v2.Range;
@@ -17,6 +18,7 @@ import org.phema.executer.util.ConfigHelper;
 import org.phema.executer.valueSets.models.Member;
 import org.phema.executer.valueSets.models.ValueSet;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,7 @@ public class ValueSetToI2b2Ontology {
     private ArrayList<I2b2ValueSetRule> valueSetRules;
     private ArrayList<I2b2OverrideRule> overrideRules;
     private OntologyService ontService;
+    private DebugLogger debugLogger;
 
     public class TranslationResult {
         public ArrayList<Member> UnmappedMembers;
@@ -55,6 +58,10 @@ public class ValueSetToI2b2Ontology {
         }
     }
 
+    public ValueSetToI2b2Ontology(DebugLogger debugLogger) {
+        this.debugLogger = debugLogger;
+    }
+
     /**
      * Initialize the value set translator
      * @param config
@@ -75,6 +82,10 @@ public class ValueSetToI2b2Ontology {
         ArrayList<Member> members = valueSet.getMembers();
         ArrayList<Concept> concepts = new ArrayList<>();
         TranslationResult result = new TranslationResult();
+
+        debugMessage(String.format("Translating value set %s (OID = %s)", valueSet.getName(), valueSet.getOid()));
+        debugMessage(String.format("  Value set has %d members", members.size()));
+
         for (Member member : members) {
             BasecodeRuleMatch basecodeRule = translateValueSetMemberToBasecode(member);
             ArrayList<ArrayList<Concept>> filterResults = filterFoundConcepts(basecodeRule);
@@ -165,11 +176,13 @@ public class ValueSetToI2b2Ontology {
             baseCodes.add(concept.getBaseCode());
         }
 
+        debugMessage("Distinct concept list:");
+        debugLogConceptList(distinctConcepts);
+
         return distinctConcepts;
     }
 
     private ArrayList<ArrayList<Concept>> filterFoundConcepts(BasecodeRuleMatch basecodeRule) throws PhemaUserException {
-        //String basecode = basecodeRule.basecode;
         ArrayList<Concept> concepts = new ArrayList<>();
         ArrayList<Concept> filteredOutConcepts = new ArrayList<>();
         ArrayList<Concept> foundConcepts = this.ontService.getCodeInfo(basecodeRule.basecode);
@@ -181,11 +194,18 @@ public class ValueSetToI2b2Ontology {
                 concepts.addAll(foundConcepts.stream()
                         .filter(x -> x.getKey().contains(restrictToPath))
                         .collect(Collectors.toList()));
+                debugMessage("Included concepts after applying filter");
+                debugLogConceptList(concepts);
+
                 filteredOutConcepts.addAll(foundConcepts.stream()
                         .filter(x -> !x.getKey().contains(restrictToPath))
                         .collect(Collectors.toList()));
+                debugMessage("Excluded concepts after applying filter");
+                debugLogConceptList(filteredOutConcepts);
             }
             else {
+                debugMessage("No filter applied - including all concepts");
+                debugLogConceptList(foundConcepts);
                 concepts.addAll(foundConcepts);
             }
         }
@@ -213,16 +233,32 @@ public class ValueSetToI2b2Ontology {
                 String ruleTerminology = rule.getDestinationTerminologyPrefix();
                 if (ruleTerminology != null) {
                     terminology = ruleTerminology;
+                    debugMessage(String.format("Rule terminology is defined - using '%s'", terminology));
+                }
+                else {
+                    debugMessage(String.format("No rule terminology is defined - we are using '%s' as default", terminology));
                 }
 
                 String ruleDelimiter = rule.getDestinationTerminologyDelimiter();
                 if (ruleDelimiter != null) {
                     delimiter = ruleDelimiter;
+                    debugMessage(String.format("Rule delimiter is defined - using '%s'", delimiter));
+                }
+                else {
+                    debugMessage(String.format("No rule delimiter is defined - we are using '%s' as default", delimiter));
                 }
             }
+            else {
+                debugMessage(String.format("No terminology rule was found for code system '%s'", member.getCodeSystem()));
+            }
+        }
+        else {
+            debugMessage("There are no terminology rules defined");
         }
 
-        return new BasecodeRuleMatch(String.format("%s%s%s", terminology, delimiter, term), rule);
+        String translatedBasecode = String.format("%s%s%s", terminology, delimiter, term);
+        debugMessage(String.format("Using the translated basecode of '%s'", translatedBasecode));
+        return new BasecodeRuleMatch(translatedBasecode, rule);
     }
 
     private void initializeTerminologyRules(Config config) throws Exception {
@@ -236,6 +272,8 @@ public class ValueSetToI2b2Ontology {
             return;
         }
 
+        debugMessage("Loading terminology mapping rules");
+        debugData("\"sourceTerminologyName\",\"prefix\",\"delimiter\",\"codeReplace.match\",\"codeReplace.replaceWith\",\"restrictToOntologyPath\"");
         for (ConfigObject ruleObject : ruleList) {
             if (!ruleObject.containsKey("sourceTerminologyName")) {
                 throw new Exception("You must specify the sourceTerminologyName within a terminologyRule");
@@ -247,6 +285,9 @@ public class ValueSetToI2b2Ontology {
             String destinationCodeMatch = ConfigHelper.getStringValue(ruleObject, "destinationTerminology.codeReplace.match", null);
             String destinationCodeReplace = ConfigHelper.getStringValue(ruleObject, "destinationTerminology.codeReplace.replaceWith", null);
             String restrictToOntologyPath = ConfigHelper.getStringValue(ruleObject, "destinationTerminology.restrictToOntologyPath", null);
+            debugData(String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"",
+                    sourceTerminologyName, destinationTerminologyPrefix, destinationTerminologyDelimiter, destinationCodeMatch, destinationCodeReplace,
+                    restrictToOntologyPath));
             terminologyRules.add(new I2b2TerminologyRule(sourceTerminologyName, destinationTerminologyPrefix, destinationTerminologyDelimiter,
                     destinationCodeMatch, destinationCodeReplace, restrictToOntologyPath));
         }
@@ -289,6 +330,43 @@ public class ValueSetToI2b2Ontology {
             }
 
             //TODO: Finish implementation
+        }
+    }
+
+    private void debugLogConceptList(ArrayList<Concept> concepts) {
+        debugData("\"key\",\"name\",\"basecode\",\"level\",\"tooltip\",\"synonym_cd\",\"visualattributes\"");
+        for (Concept concept : concepts) {
+            debugData(String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"",
+                    concept.getKey(), concept.getName(), concept.getBaseCode(), concept.getHierarchyLevel(),
+                    concept.getTooltip(), concept.isSynonym(), concept.getVisualAttributes()));
+        }
+        debugData("");
+    }
+
+    /**
+     * Write to the debug log.  Safe to call even when debug logging is disabled.
+     * @param message
+     * @throws IOException
+     */
+    protected void debugMessage(String message) {
+        if (debugLogger != null) {
+            try {
+                debugLogger.writeLog(message);
+            }
+            catch (Exception exc) {
+                // Eat the exception
+            }
+        }
+    }
+
+    protected void debugData(String data) {
+        if (debugLogger != null) {
+            try {
+                debugLogger.writeRaw(data);
+            }
+            catch (Exception exc) {
+                // Eat the exception
+            }
         }
     }
 }

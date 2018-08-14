@@ -2,7 +2,8 @@ package org.phema.executer.i2b2;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigObject;
-import org.phema.executer.interfaces.IExecutionEngineConfiguration;
+import org.phema.executer.configuration.ExecutionConfiguration;
+import org.phema.executer.interfaces.IExecutionConfiguration;
 import org.phema.executer.models.DescriptiveResult;
 import org.phema.executer.util.ConfigHelper;
 
@@ -12,7 +13,7 @@ import java.net.URISyntaxException;
 /**
  * Created by Luke Rasmussen on 7/19/17.
  */
-public class I2B2ExecutionConfiguration implements IExecutionEngineConfiguration {
+public class I2B2ExecutionConfiguration extends ExecutionConfiguration {
     public static final String DEFAULT_QUERY_PREFIX = "PhEMA";
     public static final boolean DEFAULT_WAIT_FOR_EACH_QUERY_PART = true;
 
@@ -29,6 +30,7 @@ public class I2B2ExecutionConfiguration implements IExecutionEngineConfiguration
     }
 
     public I2B2ExecutionConfiguration(URI i2b2ProjectManagementUrl, String i2b2Login, String i2b2Password, String i2b2Project, String i2b2Domain) {
+        super();
         setI2b2ProjectManagementUrl(i2b2ProjectManagementUrl);
         setI2b2Login(i2b2Login);
         setI2b2Password(i2b2Password);
@@ -37,6 +39,8 @@ public class I2B2ExecutionConfiguration implements IExecutionEngineConfiguration
     }
 
     public DescriptiveResult loadFromConfiguration(Config config) {
+        super.loadFromConfiguration(config);
+
         ConfigObject i2b2Object = config.getObject("execution.i2b2");
         try {
             setI2b2ProjectManagementUrl(new URI(ConfigHelper.getStringValue(i2b2Object, "projectManagementUrl", "")));

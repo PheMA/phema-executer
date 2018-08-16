@@ -10,7 +10,7 @@
 target/
 
 # PhEMA cache files
-phema-cache/**
+phema-cache/
 
 # Sensitive or high-churn files:
 .idea/**/dataSources/

@@ -1,70 +1,71 @@
-package org.phema.executer.cts2.models;
+package org.phema.executer.valueSets.models;
 
 import org.junit.jupiter.api.Test;
-import org.phema.executer.valueSets.models.Member;
-import org.phema.executer.valueSets.models.ValueSet;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Created by Luke Rasmussen on 7/25/17.
  */
-class ValueSetTest {
+@RunWith(JUnitPlatform.class)
+public class ValueSetTest {
     @Test
-    void valueSetConstructor_Empty() {
+    public void valueSetConstructor_Empty() {
         ValueSet valueSet = new ValueSet();
         assertEquals("", valueSet.getName());
         assertEquals("", valueSet.getOid());
     }
 
     @Test
-    void valueSetConstructor_Parameters() {
+    public void valueSetConstructor_Parameters() {
         ValueSet valueSet = new ValueSet("oid", "name");
         assertEquals("name", valueSet.getName());
         assertEquals("oid", valueSet.getOid());
     }
 
     @Test
-    void equals_null() {
+    public void equals_null() {
         ValueSet valueSet = new ValueSet("oid", "name");
         assertFalse(valueSet.equals(null));
     }
 
     @Test
-    void equals_sameObject() {
+    public void equals_sameObject() {
         ValueSet valueSet = new ValueSet("oid", "name");
         assertTrue(valueSet.equals(valueSet));
     }
 
     @Test
-    void equals_wrongType() {
+    public void equals_wrongType() {
         ValueSet valueSet = new ValueSet("oid", "name");
         assertFalse(valueSet.equals("oid"));
     }
 
     @Test
-    void equals_differentOIDs() {
+    public void equals_differentOIDs() {
         ValueSet valueSet = new ValueSet("oid", "name");
         ValueSet otherValueSet = new ValueSet("oid2", "name");
         assertFalse(valueSet.equals(otherValueSet));
     }
 
     @Test
-    void equals_differentNames() {
+    public void equals_differentNames() {
         ValueSet valueSet = new ValueSet("oid", "name");
         ValueSet otherValueSet = new ValueSet("oid", "name2");
         assertFalse(valueSet.equals(otherValueSet));
     }
 
     @Test
-    void equals_match() {
+    public void equals_match() {
         ValueSet valueSet = new ValueSet("oid", "name");
         ValueSet otherValueSet = new ValueSet("oid", "name");
         assertTrue(valueSet.equals(otherValueSet));
     }
 
     @Test
-    void addMember() {
+    public void addMember() {
         ValueSet valueSet = new ValueSet("oid", "name");
         Member member = new Member("1", "2", "3", "4", "5");
         valueSet.addMember(member);

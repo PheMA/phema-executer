@@ -2,13 +2,16 @@ package org.phema.executer.hqmf.v2;
 
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Created by Luke Rasmussen on 5/31/18.
  */
-class RangeTest {
+@RunWith(JUnitPlatform.class)
+public class RangeTest {
 
     @Test
     void safeGetHighAsString_Null() {

@@ -1,6 +1,8 @@
 package org.phema.executer.cts2;
 
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.phema.executer.valueSets.models.ValueSet;
 import org.phema.executer.util.HttpHelper;
 import org.phema.executer.util.XmlHelpers;
@@ -15,7 +17,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Created by Luke Rasmussen on 7/25/17.
  */
-class ValueSetRepositoryTest {
+@RunWith(JUnitPlatform.class)
+public class ValueSetRepositoryTest {
 
     class TestHttpHelper extends HttpHelper {
         public String nextResponse = "";
@@ -36,7 +39,7 @@ class ValueSetRepositoryTest {
     }
 
     @Test
-    void initialize() throws Exception {
+    public void initialize() throws Exception {
         TestHttpHelper httpHelper = new TestHttpHelper();
         ValueSetRepository repository = new ValueSetRepository(httpHelper);
         HashMap<String, String> parameters = new HashMap<String, String>();
@@ -56,7 +59,7 @@ class ValueSetRepositoryTest {
     }
 
     @Test
-    void search_noResults() throws Exception {
+    public void search_noResults() throws Exception {
         ValueSetRepository repository = initializeTestRepository("<ValueSetCatalogEntryDirectory\n" +
                 "    xmlns=\"http://www.omg.org/spec/CTS2/1.1/ValueSet\"\n" +
                 "    xmlns:core=\"http://www.omg.org/spec/CTS2/1.1/Core\"\n" +
@@ -77,7 +80,7 @@ class ValueSetRepositoryTest {
     }
 
     @Test
-    void search() throws Exception {
+    public void search() throws Exception {
         ValueSetRepository repository = initializeTestRepository("<ValueSetCatalogEntryDirectory\n" +
                 "    xmlns=\"http://www.omg.org/spec/CTS2/1.1/ValueSet\"\n" +
                 "    xmlns:core=\"http://www.omg.org/spec/CTS2/1.1/Core\"\n" +
@@ -124,7 +127,7 @@ class ValueSetRepositoryTest {
     }
 
     @Test
-    void getByOID() throws Exception {
+    public void getByOID() throws Exception {
         ValueSetRepository repository = initializeTestRepository("<ValueSetCatalogEntryMsg\n" +
                 "    xmlns=\"http://www.omg.org/spec/CTS2/1.1/ValueSet\"\n" +
                 "    xmlns:core=\"http://www.omg.org/spec/CTS2/1.1/Core\"\n" +
@@ -167,7 +170,7 @@ class ValueSetRepositoryTest {
     }
 
     @Test
-    void getByOID_noResult() throws Exception {
+    public void getByOID_noResult() throws Exception {
         ValueSetRepository repository = initializeTestRepository("<UnknownValueSet xmlns=\"http://www.omg.org/spec/CTS2/1.1/Exceptions\"\n" +
                 "    xmlns:core=\"http://www.omg.org/spec/CTS2/1.1/Core\"\n" +
                 "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.omg.org/spec/CTS2/1.1/Exceptions http://informatics.mayo.edu/cts2/spec/CTS2/1.1/core/Exceptions.xsd\">\n" +

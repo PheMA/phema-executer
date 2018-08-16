@@ -62,6 +62,22 @@ public class ValueSetToI2b2Ontology {
         this.debugLogger = debugLogger;
     }
 
+    public void addRule(I2b2TerminologyRule rule) {
+        if (this.terminologyRules == null) {
+            this.terminologyRules = new ArrayList<I2b2TerminologyRule>();
+        }
+
+        this.terminologyRules.add(rule);
+    }
+
+    public OntologyService getOntologyService() {
+        return ontService;
+    }
+
+    public void setOntologyService(OntologyService ontService) {
+        this.ontService = ontService;
+    }
+
     /**
      * Initialize the value set translator
      * @param config
@@ -246,6 +262,16 @@ public class ValueSetToI2b2Ontology {
                 }
                 else {
                     debugMessage(String.format("No rule delimiter is defined - we are using '%s' as default", delimiter));
+                }
+
+                String codeMatch = rule.getDestinationCodeMatch();
+                String codeReplace = rule.getDestinationCodeReplace();
+                if (codeMatch != null && codeReplace != null) {
+                    term = term.replaceFirst(codeMatch, codeReplace);
+                    debugMessage(String.format("Applied code replacement rule - new term code is '%s'", term));
+                }
+                else {
+                    debugMessage(String.format("No code replacement rule is defined - we are using '%s' as default", term));
                 }
             }
             else {

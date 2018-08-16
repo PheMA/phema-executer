@@ -1,6 +1,8 @@
 package org.phema.executer.i2b2;
 
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -10,7 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Created by Luke Rasmussen on 7/19/17.
  */
-class I2b2ConfigurationTest {
+@RunWith(JUnitPlatform.class)
+public class I2b2ConfigurationTest {
     @Test
     void defaultConstructor() {
         I2B2ExecutionConfiguration config = new I2B2ExecutionConfiguration();

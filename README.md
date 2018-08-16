@@ -1,5 +1,7 @@
 # PhEMA Executer
 
+[![Build Status](https://travis-ci.com/PheMA/phema-executer.svg?branch=master)](https://travis-ci.com/PheMA/phema-executer)
+
 ## Building
 The PhEMA Executer was built using Java 1.8, and can be built either from the command line using Maven:
 

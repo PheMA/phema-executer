@@ -1,6 +1,8 @@
 package org.phema.executer.i2b2;
 
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.phema.executer.interfaces.IHttpHelper;
 import org.phema.executer.util.HttpHelper;
 
@@ -9,7 +11,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Created by Luke Rasmussen on 7/19/17.
  */
-class I2b2ServiceBaseTest {
+@RunWith(JUnitPlatform.class)
+public class I2b2ServiceBaseTest {
     class I2B2ServiceBaseStub extends I2b2ServiceBase {
         public I2B2ServiceBaseStub(I2B2ExecutionConfiguration configuration, IHttpHelper httpHelper) {
             super(configuration, httpHelper, null);

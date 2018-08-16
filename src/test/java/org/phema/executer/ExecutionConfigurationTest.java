@@ -1,6 +1,9 @@
 package org.phema.executer;
 
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.phema.executer.configuration.ExecutionConfiguration;
 import org.phema.executer.interfaces.IValueSetRepository;
 import org.phema.executer.models.ExecutionModeType;
@@ -15,9 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 /**
  * Created by Luke Rasmussen on 7/17/17.
  */
-class ExecutionConfigurationTest {
+@RunWith(JUnitPlatform.class)
+public class ExecutionConfigurationTest {
     @Test
-    void defaultConstructor() {
+    public void defaultConstructor() {
         ExecutionConfiguration config = new ExecutionConfiguration();
         assertEquals("", config.getExecutionEngineName());
         assertEquals(ExecutionReturnType.COUNTS, config.getReturnType());

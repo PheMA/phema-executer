@@ -21,6 +21,8 @@ import java.util.HashMap;
  * Created by Luke Rasmussen on 7/25/17.
  */
 public class ValueSetRepository implements IValueSetRepository {
+    private static final String DEFAULT_NAMESPACE = "cts2";
+
     public static class Parameters {
         public static String BaseUri = "BaseUri";
     }
@@ -54,9 +56,9 @@ public class ValueSetRepository implements IValueSetRepository {
             }
 
             XPath xPath = XPathFactory.newInstance().newXPath();
-            NamespaceContext context = new UniversalNamespaceCache(result, true, "cda");
+            NamespaceContext context = new UniversalNamespaceCache(result, true, DEFAULT_NAMESPACE);
             xPath.setNamespaceContext(context);
-            NodeList entries = (NodeList)xPath.evaluate("//entry", result.getDocumentElement(), XPathConstants.NODESET);
+            NodeList entries = (NodeList)xPath.evaluate("//cts2:entry", result.getDocumentElement(), XPathConstants.NODESET);
 
             ArrayList<ValueSet> valueSets = new ArrayList<ValueSet>();
             for (int index = 0; index < entries.getLength(); index++) {
@@ -82,12 +84,12 @@ public class ValueSetRepository implements IValueSetRepository {
             }
 
             XPath xPath = XPathFactory.newInstance().newXPath();
-            NamespaceContext context = new UniversalNamespaceCache(result, true, "cda");
+            NamespaceContext context = new UniversalNamespaceCache(result, true, DEFAULT_NAMESPACE);
             xPath.setNamespaceContext(context);
 
             // For now we're just checking if the particular node exists - if not, we assume it's "not found" and move on.
             // If need be in the future, an actual "not found" returns a response with a parent node of UnknownValueSet.
-            Node entry = (Node)xPath.evaluate("//valueSetCatalogEntry", result.getDocumentElement(), XPathConstants.NODE);
+            Node entry = (Node)xPath.evaluate("//cts2:valueSetCatalogEntry", result.getDocumentElement(), XPathConstants.NODE);
             if (entry == null) {
                 return null;
             }

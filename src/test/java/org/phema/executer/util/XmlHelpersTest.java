@@ -1,6 +1,8 @@
 package org.phema.executer.util;
 
 import org.junit.jupiter.api.Test;
+import org.junit.platform.runner.JUnitPlatform;
+import org.junit.runner.RunWith;
 import org.w3c.dom.Document;
 
 import javax.xml.transform.TransformerException;
@@ -10,7 +12,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Created by Luke Rasmussen on 7/25/17.
  */
-class XmlHelpersTest {
+@RunWith(JUnitPlatform.class)
+public class XmlHelpersTest {
     @Test
     void loadXMLFromString() throws Exception {
         Document result = XmlHelpers.loadXMLFromString("<test>Test document</test>");

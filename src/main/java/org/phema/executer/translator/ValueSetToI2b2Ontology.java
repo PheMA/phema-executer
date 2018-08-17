@@ -103,23 +103,30 @@ public class ValueSetToI2b2Ontology {
         debugMessage(String.format("  Value set has %d members", members.size()));
 
         for (Member member : members) {
-            BasecodeRuleMatch basecodeRule = translateValueSetMemberToBasecode(member);
-            ArrayList<ArrayList<Concept>> filterResults = filterFoundConcepts(basecodeRule);
-            ArrayList<Concept> foundConcepts = filterResults.get(0);
-            ArrayList<Concept> filteredOutConcepts = filterResults.get(1);
-            if (foundConcepts.isEmpty() && !result.UnmappedMembers.contains(member)) {
-                result.UnmappedMembers.add(member);
-            }
-            else {
-                result.MappedMembers.put(member, distinctConceptList(foundConcepts));
-                concepts.addAll(foundConcepts);
-            }
+            List<BasecodeRuleMatch> basecodeRules = translateValueSetMemberToBasecode(member);
+            for (BasecodeRuleMatch basecodeRule : basecodeRules) {
+                ArrayList<ArrayList<Concept>> filterResults = filterFoundConcepts(basecodeRule);
+                ArrayList<Concept> foundConcepts = filterResults.get(0);
+                ArrayList<Concept> filteredOutConcepts = filterResults.get(1);
+                if (foundConcepts.isEmpty() && !result.UnmappedMembers.contains(member)) {
+                    result.UnmappedMembers.add(member);
+                } else {
+                    if (!result.MappedMembers.containsKey(member)) {
+                        result.MappedMembers.put(member, new ArrayList<Concept>());
+                    }
+                    result.MappedMembers.get(member).addAll(distinctConceptList(foundConcepts));
+                    concepts.addAll(foundConcepts);
+                }
 
-            // We separately track any concepts that were filtered out so that we can
-            // report to the user if their filter is perhaps too restrictive.  Note
-            // that this is only set if a filter is defined.
-            if (!filteredOutConcepts.isEmpty()) {
-                result.FilteredOutMembers.put(member, distinctConceptList(filteredOutConcepts));
+                // We separately track any concepts that were filtered out so that we can
+                // report to the user if their filter is perhaps too restrictive.  Note
+                // that this is only set if a filter is defined.
+                if (!filteredOutConcepts.isEmpty()) {
+                    if (!result.FilteredOutMembers.containsKey(member)) {
+                        result.FilteredOutMembers.put(member, new ArrayList<Concept>());
+                    }
+                    result.FilteredOutMembers.get(member).addAll(distinctConceptList(filteredOutConcepts));
+                }
             }
         }
 
@@ -166,11 +173,13 @@ public class ValueSetToI2b2Ontology {
             Member temp = new Member();
             temp.setCodeSystem("Age");
             temp.setCode(Integer.toString(counter));
-            BasecodeRuleMatch basecodeRule = translateValueSetMemberToBasecode(temp);
-            ArrayList<ArrayList<Concept>> filterResults = filterFoundConcepts(basecodeRule);
-            ArrayList<Concept> foundConcepts = filterResults.get(0);
-            ArrayList<Concept> filteredOutConcepts = filterResults.get(1);
-            ageConcepts.addAll(foundConcepts);
+            List<BasecodeRuleMatch> basecodeRules = translateValueSetMemberToBasecode(temp);
+            for (BasecodeRuleMatch basecodeRule : basecodeRules) {
+                ArrayList<ArrayList<Concept>> filterResults = filterFoundConcepts(basecodeRule);
+                ArrayList<Concept> foundConcepts = filterResults.get(0);
+                //ArrayList<Concept> filteredOutConcepts = filterResults.get(1);
+                ageConcepts.addAll(foundConcepts);
+            }
         }
 
         return distinctConceptList(ageConcepts);
@@ -233,58 +242,73 @@ public class ValueSetToI2b2Ontology {
      * @param member
      * @return
      */
-    private BasecodeRuleMatch translateValueSetMemberToBasecode(Member member) {
-        // Default is codesystem + : + code
-        String terminology = member.getCodeSystem();
-        String delimiter = DEFAULT_DELIMITER;
-        String term = member.getCode();
+    private ArrayList<BasecodeRuleMatch> translateValueSetMemberToBasecode(Member member) {
+        ArrayList<BasecodeRuleMatch> ruleMatches = new ArrayList<>();
 
         // First apply any terminology rules that apply to this member.
-        I2b2TerminologyRule rule = null;
+        //I2b2TerminologyRule rule = null;
         if (this.terminologyRules != null) {
-            Optional<I2b2TerminologyRule> ruleResult = this.terminologyRules.stream().filter(x -> x.getSourceTerminologyName().equals(member.getCodeSystem())).findFirst();
-            if (ruleResult.isPresent()) {
-                // Check to see if the appropriate parts of the rule are defined.  If not, use the defaults.
-                rule = ruleResult.get();
-                String ruleTerminology = rule.getDestinationTerminologyPrefix();
-                if (ruleTerminology != null) {
-                    terminology = ruleTerminology;
-                    debugMessage(String.format("Rule terminology is defined - using '%s'", terminology));
-                }
-                else {
-                    debugMessage(String.format("No rule terminology is defined - we are using '%s' as default", terminology));
-                }
+            List<I2b2TerminologyRule> ruleResults = this.terminologyRules.stream()
+                    .filter(x -> x.getSourceTerminologyName().equals(member.getCodeSystem()))
+                    .collect(Collectors.toList());
+            if (ruleResults != null && ruleResults.size() > 0) {
+                for (I2b2TerminologyRule rule : ruleResults) {
+                    // Default is codesystem + : + code
+                    String terminology = member.getCodeSystem();
+                    String delimiter = DEFAULT_DELIMITER;
+                    String term = member.getCode();
 
-                String ruleDelimiter = rule.getDestinationTerminologyDelimiter();
-                if (ruleDelimiter != null) {
-                    delimiter = ruleDelimiter;
-                    debugMessage(String.format("Rule delimiter is defined - using '%s'", delimiter));
-                }
-                else {
-                    debugMessage(String.format("No rule delimiter is defined - we are using '%s' as default", delimiter));
-                }
+                    // Check to see if the appropriate parts of the rule are defined.  If not, use the defaults.
+                    //rule = ruleResult.get();
+                    String ruleTerminology = rule.getDestinationTerminologyPrefix();
+                    if (ruleTerminology != null) {
+                        terminology = ruleTerminology;
+                        debugMessage(String.format("Rule terminology is defined - using '%s'", terminology));
+                    }
+                    else {
+                        debugMessage(String.format("No rule terminology is defined - we are using '%s' as default", terminology));
+                    }
 
-                String codeMatch = rule.getDestinationCodeMatch();
-                String codeReplace = rule.getDestinationCodeReplace();
-                if (codeMatch != null && codeReplace != null) {
-                    term = term.replaceFirst(codeMatch, codeReplace);
-                    debugMessage(String.format("Applied code replacement rule - new term code is '%s'", term));
-                }
-                else {
-                    debugMessage(String.format("No code replacement rule is defined - we are using '%s' as default", term));
+                    String ruleDelimiter = rule.getDestinationTerminologyDelimiter();
+                    if (ruleDelimiter != null) {
+                        delimiter = ruleDelimiter;
+                        debugMessage(String.format("Rule delimiter is defined - using '%s'", delimiter));
+                    }
+                    else {
+                        debugMessage(String.format("No rule delimiter is defined - we are using '%s' as default", delimiter));
+                    }
+
+                    String codeMatch = rule.getDestinationCodeMatch();
+                    String codeReplace = rule.getDestinationCodeReplace();
+                    if (codeMatch != null && codeReplace != null) {
+                        term = term.replaceFirst(codeMatch, codeReplace);
+                        debugMessage(String.format("Applied code replacement rule - new term code is '%s'", term));
+                    }
+                    else {
+                        debugMessage(String.format("No code replacement rule is defined - we are using '%s' as default", term));
+                    }
+
+                    String translatedBasecode = String.format("%s%s%s", terminology, delimiter, term);
+                    debugMessage(String.format("Using the translated basecode of '%s'", translatedBasecode));
+                    ruleMatches.add(new BasecodeRuleMatch(translatedBasecode, rule));
                 }
             }
             else {
                 debugMessage(String.format("No terminology rule was found for code system '%s'", member.getCodeSystem()));
+                String translatedBasecode = String.format("%s%s%s", member.getCodeSystem(), DEFAULT_DELIMITER, member.getCode());
+                debugMessage(String.format("Using the translated basecode of '%s'", translatedBasecode));
+                ruleMatches.add(new BasecodeRuleMatch(translatedBasecode, null));
             }
         }
         else {
             debugMessage("There are no terminology rules defined");
+            String translatedBasecode = String.format("%s%s%s", member.getCodeSystem(), DEFAULT_DELIMITER, member.getCode());
+            debugMessage(String.format("Using the translated basecode of '%s'", translatedBasecode));
+            ruleMatches.add(new BasecodeRuleMatch(translatedBasecode, null));
+
         }
 
-        String translatedBasecode = String.format("%s%s%s", terminology, delimiter, term);
-        debugMessage(String.format("Using the translated basecode of '%s'", translatedBasecode));
-        return new BasecodeRuleMatch(translatedBasecode, rule);
+        return ruleMatches;
     }
 
     private void initializeTerminologyRules(Config config) throws Exception {

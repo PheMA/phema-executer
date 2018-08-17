@@ -130,4 +130,70 @@ public class ValueSetToI2b2OntologyTest {
         assertEquals(1, result.FilteredOutMembers.size());
         assertEquals("ICD:250.0-TEST", result.FilteredOutMembers.get(member).get(0).getBaseCode());
     }
+
+    @Test
+    void translate_termTranslation_MultipleMatchingRules() throws PhemaUserException {
+        OntologyService ontService = mock(OntologyService.class);
+        ArrayList<Concept> returnedConcepts = new ArrayList<Concept>();
+        returnedConcepts.add(new Concept("TEST", "Test 1", "ICD:250.0-TEST1", 5, "", false, ""));
+        returnedConcepts.add(new Concept("TEST", "Test 2", "I|250.0-TEST2", 5, "", false, ""));
+        when(ontService.getCodeInfo("ICD:250.0-TEST1")).thenReturn(new ArrayList<Concept>(returnedConcepts.subList(0,1)));
+        when(ontService.getCodeInfo("I|250.0-TEST2")).thenReturn(new ArrayList<Concept>(returnedConcepts.subList(1,2)));
+
+        // Here we have multiple matching rules.  This lets us verify that we can have
+        // several rules that do some type of translation (e.g., add a suffix) and return
+        // multiple results
+        ValueSetToI2b2Ontology translator = new ValueSetToI2b2Ontology(null);
+        translator.addRule(new I2b2TerminologyRule("ICD9", "ICD", ":", "(.*)", "$1-TEST1", null));
+        translator.addRule(new I2b2TerminologyRule("ICD9", "I", "|", "(.*)", "$1-TEST2", null));
+        translator.setOntologyService(ontService);
+        ValueSet valueSet = new ValueSet();
+        Member member = new Member("250.0", "Test", "ICD9", "", "");
+        valueSet.addMember(member);
+        ValueSetToI2b2Ontology.TranslationResult result = translator.translate(valueSet);
+        assertNotNull(result);
+        assertEquals(2, result.MappedMembers.get(member).size());
+        assertEquals(2, result.DistinctMappedConcepts.size());
+        assertEquals("ICD:250.0-TEST1", result.MappedMembers.get(member).get(0).getBaseCode());
+        assertEquals("I|250.0-TEST2", result.MappedMembers.get(member).get(1).getBaseCode());
+        assertEquals("ICD:250.0-TEST1", result.DistinctMappedConcepts.get(0).getBaseCode());
+        assertEquals("I|250.0-TEST2", result.DistinctMappedConcepts.get(1).getBaseCode());
+    }
+
+    @Test
+    void translate_termTranslation_MultipleMatchingRules_WithExclusions() throws PhemaUserException {
+        OntologyService ontService = mock(OntologyService.class);
+        ArrayList<Concept> returnedConcepts = new ArrayList<Concept>();
+        returnedConcepts.add(new Concept("\\\\TEST\\Test1\\", "Test 1", "ICD:250.0-TEST1", 5, "", false, ""));
+        returnedConcepts.add(new Concept("\\\\TEST\\Test1\\", "Test 1", "ICD:250.0-TEST1", 5, "", true, ""));
+        returnedConcepts.add(new Concept("\\\\TEST\\Test2\\", "Test 2", "I|250.0-TEST2", 5, "", false, ""));
+        returnedConcepts.add(new Concept("\\\\TEST\\Test2\\", "Test 2", "I|250.0-TEST2", 5, "", true, ""));
+        returnedConcepts.add(new Concept("\\\\OTHER\\Test2\\", "Test 3", "I|250.0-TEST2", 5, "", false, ""));
+        returnedConcepts.add(new Concept("\\\\OTHER\\Test2\\", "Test 3", "I|250.0-TEST2", 5, "", true, ""));
+        when(ontService.getCodeInfo("ICD:250.0-TEST1")).thenReturn(new ArrayList<>(returnedConcepts.subList(0,2)));
+        when(ontService.getCodeInfo("I|250.0-TEST2")).thenReturn(new ArrayList<>(returnedConcepts.subList(2,6)));
+
+        // Here we have multiple matching rules.  This lets us verify that we can have
+        // several rules that do some type of translation (e.g., add a suffix) and return
+        // multiple results.  This differs from the previous test in that we have
+        // duplicate codes present (making sure we get distinct back), and we filter out
+        // results based on the path.
+        ValueSetToI2b2Ontology translator = new ValueSetToI2b2Ontology(null);
+        translator.addRule(new I2b2TerminologyRule("ICD9", "ICD", ":", "(.*)", "$1-TEST1", "\\\\TEST\\"));
+        translator.addRule(new I2b2TerminologyRule("ICD9", "I", "|", "(.*)", "$1-TEST2", "\\\\TEST\\"));
+        translator.setOntologyService(ontService);
+        ValueSet valueSet = new ValueSet();
+        Member member = new Member("250.0", "Test", "ICD9", "", "");
+        valueSet.addMember(member);
+        ValueSetToI2b2Ontology.TranslationResult result = translator.translate(valueSet);
+        assertNotNull(result);
+        assertEquals(2, result.MappedMembers.get(member).size());
+        assertEquals(2, result.DistinctMappedConcepts.size());
+        assertEquals(1, result.FilteredOutMembers.size());
+        assertEquals("ICD:250.0-TEST1", result.MappedMembers.get(member).get(0).getBaseCode());
+        assertEquals("I|250.0-TEST2", result.MappedMembers.get(member).get(1).getBaseCode());
+        assertEquals("ICD:250.0-TEST1", result.DistinctMappedConcepts.get(0).getBaseCode());
+        assertEquals("I|250.0-TEST2", result.DistinctMappedConcepts.get(1).getBaseCode());
+        assertEquals("I|250.0-TEST2", result.FilteredOutMembers.get(member).get(0).getBaseCode());
+    }
 }

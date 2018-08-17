@@ -6,6 +6,7 @@
 	2. [Change the Delimiter](#change-delimiter)
 	3. [Translate Code Value](#translate-code-value)
 	4. [Filter i2b2 Path](#filter-i2b2-path)
+	5. [Multiple Rules](#multiple-rules)
 3. [Example Configuration](#example-configuration)
 
 ## Introduction <a name="introduction"></a>
@@ -146,7 +147,7 @@ restrictToOntologyPath = "\\\\i2b2_icd10"
 It would also match `\\i2b2_icd10_old`.
 
 
-### Multiple Rules
+### Multiple Rules <a name="multiple-rules"></a>
 PhEx allows multiple mapping rules to be applied.  This can be rules across different terminologies in the value set (e.g., ICD-9, ICD-10, RxNorm), but it may also include multiple rules for the same terminology if you have the same code represented different ways in your i2b2 ontology.
 
 Starting simple, here we show how ICD-10
